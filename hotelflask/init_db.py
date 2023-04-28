@@ -1,16 +1,27 @@
 import os
 import psycopg2
-
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 conn = psycopg2.connect(
         host="localhost",
-        database="hotell",
+        database="postgres",
         user='newuser',
         password='password')
+conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 
 # Open a cursor to perform database operations
 cur = conn.cursor()
 
 # Execute a command: this creates a new table
+cur.execute("DROP DATABASE IF EXISTS hotell;")
+cur.execute('CREATE DATABASE hotell;')
+cur.close()
+conn.close()
+conn = psycopg2.connect(
+        host="localhost",
+        database="hotell",
+        user='newuser',
+        password='password')
+cur = conn.cursor()
 cur.execute("""
 DO $$
 BEGIN
@@ -19,18 +30,18 @@ BEGIN
     END IF;
 END$$;
 """)
-cur.execute('drop trigger if exists loyalty on customer;')
-cur.execute('drop function makeloyal cascade;')
-cur.execute('drop trigger if exists logtableupd on service ')
-# cur.execute('drop function insertlogtable cascade')
-cur.execute('DROP TABLE IF EXISTS customer cascade;')
-cur.execute('DROP TABLE IF EXISTS logtable cascade;')
-cur.execute('DROP TABLE IF EXISTS service cascade;')
-cur.execute('DROP TABLE IF EXISTS accessory cascade;')
-cur.execute('DROP TABLE IF EXISTS room cascade;')
-cur.execute('DROP TABLE IF EXISTS payments cascade;')
-cur.execute('DROP TABLE IF EXISTS service_taken cascade ;')
-cur.execute('DROP TABLE IF EXISTS rooms_booked cascade;')
+# cur.execute('drop trigger if exists loyalty on customer;')
+# cur.execute('drop function makeloyal cascade;')
+# cur.execute('drop trigger if exists logtableupd on service ')
+# # cur.execute('drop function insertlogtable cascade')
+# cur.execute('DROP TABLE IF EXISTS customer cascade;')
+# cur.execute('DROP TABLE IF EXISTS logtable cascade;')
+# cur.execute('DROP TABLE IF EXISTS service cascade;')
+# cur.execute('DROP TABLE IF EXISTS accessory cascade;')
+# cur.execute('DROP TABLE IF EXISTS room cascade;')
+# cur.execute('DROP TABLE IF EXISTS payments cascade;')
+# cur.execute('DROP TABLE IF EXISTS service_taken cascade ;')
+# cur.execute('DROP TABLE IF EXISTS rooms_booked cascade;')
 
 cur.execute("""CREATE TABLE customer(
 customer_ID SERIAL PRIMARY KEY,
@@ -59,7 +70,7 @@ QUANTITY_AVAILABLE INT NOT NULL
 cur.execute("""CREATE TABLE ROOM(
 ROOM_NO int primary key,
 ROOM_COST INT ,
-ROOM_TYPE TEXT,'
+ROOM_TYPE TEXT,
 ROOM_SIZE INT
 );""")
 
@@ -133,7 +144,39 @@ for each row
 execute procedure insertlogtable();
 """
 )
+cur.execute("""
 
+CREATE OR REPLACE procedure book_room(cust_id int , in_date timestamp, out_date timestamp, type text, SIZ INT)
+language plpgsql
+as $$
+declare
+	varu int;
+	cost numeric;
+	rno int;
+begin
+
+if exists
+(SELECT room_no 
+	from room where not exists ( select room_no from rooms_booked where (((room_indate between in_date and out_date))or(room_outdate between in_date and out_date )) and rooms_booked.room_no = room.room_no and room.room_type = type)AND ROOM_SIZE = SIZ)
+	
+then
+	select room_cost ,room_no into cost,rno  from room where not exists ( select room_no from rooms_booked where (((room_indate between in_date and out_date))or(room_outdate between in_date and out_date )) and rooms_booked.room_no = room.room_no and room.room_type = type) AND ROOM_SIZE = SIZ limit 1 ;
+	
+	
+	insert into payments (customer_id,amount,status,payment_type,room_no,DATE_OF_INITIATION,DATE_OF_completion) values(cust_id,cost,'PAID','BOOKING',rno,now(),now()) returning payment_id into varu;
+	
+	
+	insert into rooms_booked values(varu,rno,in_date,out_date);
+else 
+
+ raise notice 'room on exact date was not availaible you can use closest function';
+ 
+
+end if;
+
+end;
+$$;
+""")
 
 cur.execute("""create or replace function makeloyal()
 returns trigger
@@ -197,7 +240,80 @@ after insert on
 payments
 for each row
 execute procedure updtotalpaid();
+
+create or replace function closest(in_date timestamp, out_date timestamp, type text,SIZ int)
+returns table (inn_date timestamp,outt_date timestamp)
+language plpgsql
+as $$
+begin
+	return query (select t.day,t.day + interval '4 day' from
+(SELECT * FROM   generate_series
+
+(in_date, in_date + interval '30 day', interval  '1 day') )AS t(day)
+
+, room where room_type = type and room_size = SIZ and room_no in (SELECT room_no from room where not exists ( select room_no from rooms_booked where (((room_indate between t.day and (t.day+
+
+ (out_date - in_date ) ))or(room_outdate between t.day and (t.day +  (out_date - in_date ) )) and rooms_booked.room_no = room.room_no )))));
+ 
+end;
+$$;
+create table waiting(
+	waiting_id serial primary key,
+	customer_id int ,
+	accessory_id int,
+	quantity int,
+	beffore timestamp
+);
+create or replace function lookupacc(customerid int,id int,quantity int,whenn timestamp)
+returns text
+language plpgsql
+as $$
+declare
+	cus int;
+
+begin
+		if exists (select accesor_cost*quantity into cus from accessory where accessory_id = id and quantity <= QUANTITY_AVAILABLE)
+		then
+		insert into payments(customer_id,amount,status,payment_type,accessory_id,DATE_OF_INITIATION) values(customerid,cus,'accessory',id,current_timestamp);
+		else
+		insert into waiting(
+	customer_id ,
+	accessory_id ,
+	quantity ,
+	beffore) values(customerid,id,quantity,whenn);
+		end if;
+end;
+$$;
+
+create or replace function funfindwho()
+returns trigger
+language plpgsql
+as $$
+declare 
+	wt int;
+	cus int;
+	wq int;
+	iid int;
+
+begin
+		if exists (select into wt,cus,wq,iid waiting_id ,customer_id ,waiting.quantity ,waiting.accessory_id from waiting 
+		where timestamp > current_timestamp and new.accessory_id = waiting.accessory_id and new.quantity > waiting.quantity
+		 order by waiting_id limit 1)
+		 then
+			insert into payments(customer_id,amount,status,payment_type,accessory_id,DATE_OF_INITIATION) values(cus,new.ACCESSOR_COST*wq,'due','accessory',iid,current_timestamp); 
+		return new;
+		end if;
+		return new;
+end;
+$$;
+
+create trigger findwho
+after update 
+on accessory
+for each row
+execute procedure funfindwho();
 """)
+
 conn.commit()
 
 cur.close()

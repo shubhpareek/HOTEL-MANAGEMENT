@@ -1,11 +1,11 @@
-from flask import Flask, render_template, request, url_for, redirect
+from flask import Flask, render_template, request, url_for, redirect,session
 from dotenv import load_dotenv
 load_dotenv()
 import os
 import psycopg2
 
 app = Flask(__name__)
-
+app.secret_key = "shubh "
 def get_db_connection():
     conn = psycopg2.connect(host='localhost',
                             database='hotell',

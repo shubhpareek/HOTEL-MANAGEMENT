@@ -132,7 +132,7 @@ DATE_OF_COMPLETION timestamp,
 
 
 
-create or replace function closest(in_date timestamp, out_date timestamp, type text)
+create or replace function closest(in_date timestamp, out_date timestamp, type text,SIZ int)
 returns table (inn_date timestamp,outt_date timestamp)
 language plpgsql
 as $$
@@ -142,7 +142,7 @@ begin
 
 (in_date, in_date + interval '30 day', interval  '1 day') )AS t(day)
 
-, room where room_type = type and room_no in (SELECT room_no from room where not exists ( select room_no from rooms_booked where (((room_indate between t.day and (t.day+
+, room where room_type = type and room_size = SIZ and room_no in (SELECT room_no from room where not exists ( select room_no from rooms_booked where (((room_indate between t.day and (t.day+
 
  (out_date - in_date ) ))or(room_outdate between t.day and (t.day +  (out_date - in_date ) )) and rooms_booked.room_no = room.room_no )))));
  
@@ -321,8 +321,61 @@ on service
 for each row
 execute procedure insertlogtable();
 
+create table waiting(
+	waiting_id serial primary key,
+	customer_id int ,
+	accessory_id int,
+	quantity int,
+	beffore timestamp
+);
+create or replace function lookupacc(customerid int,id int,quantity int,whenn timestamp)
+returns text
+language plpgsql
+as $$
+declare
+	cus int;
 
+begin
+		if exists (select accesor_cost*quantity into cus from accessory where accessory_id = id and quantity <= QUANTITY_AVAILABLE)
+		then
+		insert into payments(customer_id,amount,status,payment_type,accessory_id,DATE_OF_INITIATION) values(customerid,cus,'accessory',id,current_timestamp);
+		else
+		insert into waiting(
+	customer_id ,
+	accessory_id ,
+	quantity ,
+	beffore) values(customerid,id,quantity,whenn);
+		end if;
+end;
+$$;
 
+create or replace function funfindwho()
+returns trigger
+language plpgsql
+as $$
+declare 
+	wt int;
+	cus int;
+	wq int;
+	iid int;
+
+begin
+		if exists (select into wt,cus,wq,iid waiting_id ,customer_id ,waiting.quantity ,waiting.accessory_id from waiting 
+		where timestamp > current_timestamp and new.accessory_id = waiting.accessory_id and new.quantity > waiting.quantity
+		 order by waiting_id limit 1)
+		 then
+			insert into payments(customer_id,amount,status,payment_type,accessory_id,DATE_OF_INITIATION) values(cus,new.ACCESSOR_COST*wq,'due','accessory',iid,current_timestamp); 
+		return new;
+		end if;
+		return new;
+end;
+$$;
+
+create trigger findwho
+after update 
+on accessory
+for each row
+execute procedure ;
 
 
 
