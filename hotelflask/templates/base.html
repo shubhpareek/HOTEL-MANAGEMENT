@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %} {% endblock %} - FlaskApp</title>
+    <style>
+        nav a {
+            color: #d64161;
+            font-size: 3em;
+            margin-left: 50px;
+            text-decoration: none;
+        }
+
+        .book {
+            padding: 20px;
+            margin: 10px;
+            background-image: url("../static/pp.jpeg") ;
+            background-repeat: no-repeat;
+            /* background-size: cover; */
+        }
+
+        .review {
+                margin-left: 50px;
+                font-size: 20px;
+        }
+        
+        body {
+                background-image: url("../static/russian2.jpg") ;
+                background-repeat: no-repeat;
+                background-size: cover;
+        }
+    </style>
+</head>
+<body>
+    
+            <a href="{{ url_for('index') }}">
+    <center><h1 style ="display: 70px;color:#BCC1BA">HOTEL CALIFORNIA</h1></center>
+    
+            </a>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+
+    <!-- <hr> -->
+    <div class="content">
+        {% block content %} {% endblock %}
+    </div>
+</body>
+</html>
