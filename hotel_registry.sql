@@ -339,12 +339,14 @@ begin
 		if exists (select accesor_cost*quantity into cus from accessory where accessory_id = id and quantity <= QUANTITY_AVAILABLE)
 		then
 		insert into payments(customer_id,amount,status,payment_type,accessory_id,DATE_OF_INITIATION) values(customerid,cus,'accessory',id,current_timestamp);
+		return 'accessory availaible inserted into payments'
 		else
 		insert into waiting(
 	customer_id ,
 	accessory_id ,
 	quantity ,
 	beffore) values(customerid,id,quantity,whenn);
+		return 'accessory not availaible currently so inserted in waiting'
 		end if;
 end;
 $$;
@@ -360,11 +362,25 @@ declare
 	iid int;
 
 begin
-		if exists (select into wt,cus,wq,iid waiting_id ,customer_id ,waiting.quantity ,waiting.accessory_id from waiting 
+		if exists (select * from waiting 
 		where timestamp > current_timestamp and new.accessory_id = waiting.accessory_id and new.quantity > waiting.quantity
 		 order by waiting_id limit 1)
 		 then
+		 	select waiting_id into wt from waiting 
+		where timestamp > current_timestamp and new.accessory_id = waiting.accessory_id and new.quantity > waiting.quantity
+		 order by waiting_id limit 1;
+		 	select customer_id into cus from waiting 
+		where timestamp > current_timestamp and new.accessory_id = waiting.accessory_id and new.quantity > waiting.quantity
+		 order by waiting_id limit 1;
+		 	select waiting.quantity into wq from waiting 
+		where timestamp > current_timestamp and new.accessory_id = waiting.accessory_id and new.quantity > waiting.quantity
+		 order by waiting_id limit 1;
+		 	select waiting.accessory_id into iid from waiting 
+		where timestamp > current_timestamp and new.accessory_id = waiting.accessory_id and new.quantity > waiting.quantity
+		 order by waiting_id limit 1;
+		 	
 			insert into payments(customer_id,amount,status,payment_type,accessory_id,DATE_OF_INITIATION) values(cus,new.ACCESSOR_COST*wq,'due','accessory',iid,current_timestamp); 
+			update accessory set QUANTITY_AVAILABLE = QUANTITY_AVAILABLE - wq where accessory_id = iid;
 		return new;
 		end if;
 		return new;
@@ -381,5 +397,42 @@ execute procedure ;
 
 
 
+CREATE OR REPLACE procedure forservice(cust_id int , in_date timestamp, out_date timestamp, whservice text )
+language plpgsql
+as $$
+declare
+	varu int;
+	rno int;
+	pid int;
+begin
+
+if exists
+(SELECT service_id 
+	from service where not exists ( select service_id from service_taken where (((startime between in_date and out_date))or(endtime between in_date and out_date )) and service.service_id= service_taken.service_id )AND service_type = whservice)
+	
+then
+	SELECT service_id,service_rate into varu, rno 
+	from service where not exists ( select service_id from service_taken where (((startime between in_date and out_date))or(endtime between in_date and out_date )) and service.service_id= service_taken.service_id )AND service_type = whservice limit 1;
+	
+	
+	insert into payments (customer_id,amount,status,payment_type,service_id,DATE_OF_INITIATION,DATE_OF_completion) values(cust_id,cast(rno as numeric),'PAID','SERVICE',varu,now(),now()) returning payment_id into pid;
+	
+	
+	insert into service_taken values(pid,varu,in_date,out_date);
+	raise notice 'service was availaible';
+else 
+
+ raise notice 'not availaible';
+ 
+
+end if;
+
+end;
+$$;
+status message 
 
 
+query for finall bill 
+
+select payments.payment_type,amount,status,DATE_OF_INITIATION from payments,customer
+where payments.customer_id = %s% and DATE_OF_INITIATION > lastexit and customer.customer_id = payments.customer_id;

@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<form method="post">
+    <p>
+        <label for="customer_id">customer_id </label>
+        <input type="text" name="customer_id"
+               placeholder="">
+        </input>
+    </p>
+
+    <p>
+        <label for="indate">indate </label>
+        <input type="datetime-local" name="indate"
+               placeholder="">
+        </input>
+    </p>
+    <p>
+        <label for="outdate">outdate </label>
+        <input type="datetime-local" name="outdate"
+               placeholder="">
+        </input>
+    </p>
+    <p>
+        <label for="type">Choose a type of room:</label>
+        <select id="type" name="type">
+          <option value="volvo">Volvo</option>
+          <option value="saab">Saab</option>
+          <option value="fiat">Fiat</option>
+          <option value="audi">Audi</option>
+        </select>
+    </p>
+    <p>
+        <label for="size">size</label>
+        <input type="number" name="size"
+               placeholder="">
+        </input>
+    </p>
+
+    <p>
+        <button type="submit">Submit</button>
+    </p>
+</form>
+{% endblock %}

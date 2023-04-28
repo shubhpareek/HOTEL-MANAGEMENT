@@ -35,6 +35,8 @@ def receptionist():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        session['username']= username
+        session['password']= password
 
         try:
             conn = get_db_connection1(username,password)
@@ -49,4 +51,29 @@ def receptionist():
 @app.route('/recepage/')
 def recepage():
     print("hello")
+
     return render_template('recepage.html')
+
+@app.route('/roombook/',methods=('GET', 'POST'))
+def roombook():
+
+    if request.method == 'POST':
+        customer_id= request.form['customer_id']
+        indate = request.form['indate']
+        outdate = request.form['indate']
+
+        userid = request.form['username']
+        password = request.form['password']
+        session['username']= username
+        session['password']= password
+
+        try:
+            conn = get_db_connection1(session['username'],session['password'])
+            # render_template('recepage.html');
+
+            cur = conn.cursor()
+            print("hellllo")
+            return redirect(url_for('recepage'))
+        except:
+            return render_template('receptionist.html')
+    return render_template('roombook.html')

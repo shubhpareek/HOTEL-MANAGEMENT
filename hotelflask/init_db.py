@@ -50,7 +50,8 @@ TOTAL_DUE     INT  NOT NULL,
 loyalty int default 0,
 NAME TEXT NOT NULL,
 PHONE_NO TEXT NOT NULL,
-AGE INT 
+AGE INT,
+lastexit timestamp 
 );""")
 
 cur.execute("""CREATE TABLE SERVICE(
@@ -275,12 +276,14 @@ begin
 		if exists (select accesor_cost*quantity into cus from accessory where accessory_id = id and quantity <= QUANTITY_AVAILABLE)
 		then
 		insert into payments(customer_id,amount,status,payment_type,accessory_id,DATE_OF_INITIATION) values(customerid,cus,'accessory',id,current_timestamp);
+		return 'accessory availaible inserted into payments';
 		else
 		insert into waiting(
 	customer_id ,
 	accessory_id ,
 	quantity ,
 	beffore) values(customerid,id,quantity,whenn);
+		return 'accessory not availaible currently so inserted in waiting';
 		end if;
 end;
 $$;
@@ -296,16 +299,31 @@ declare
 	iid int;
 
 begin
-		if exists (select into wt,cus,wq,iid waiting_id ,customer_id ,waiting.quantity ,waiting.accessory_id from waiting 
+		if exists (select * from waiting 
 		where timestamp > current_timestamp and new.accessory_id = waiting.accessory_id and new.quantity > waiting.quantity
 		 order by waiting_id limit 1)
 		 then
+		 	select waiting_id into wt from waiting 
+		where timestamp > current_timestamp and new.accessory_id = waiting.accessory_id and new.quantity > waiting.quantity
+		 order by waiting_id limit 1;
+		 	select customer_id into cus from waiting 
+		where timestamp > current_timestamp and new.accessory_id = waiting.accessory_id and new.quantity > waiting.quantity
+		 order by waiting_id limit 1;
+		 	select waiting.quantity into wq from waiting 
+		where timestamp > current_timestamp and new.accessory_id = waiting.accessory_id and new.quantity > waiting.quantity
+		 order by waiting_id limit 1;
+		 	select waiting.accessory_id into iid from waiting 
+		where timestamp > current_timestamp and new.accessory_id = waiting.accessory_id and new.quantity > waiting.quantity
+		 order by waiting_id limit 1;
+		 	
 			insert into payments(customer_id,amount,status,payment_type,accessory_id,DATE_OF_INITIATION) values(cus,new.ACCESSOR_COST*wq,'due','accessory',iid,current_timestamp); 
+			update accessory set QUANTITY_AVAILABLE = QUANTITY_AVAILABLE - wq where accessory_id = iid;
 		return new;
 		end if;
 		return new;
 end;
 $$;
+
 
 create trigger findwho
 after update 
