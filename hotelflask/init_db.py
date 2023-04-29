@@ -45,8 +45,8 @@ END$$;
 
 cur.execute("""CREATE TABLE customer(
 customer_ID SERIAL PRIMARY KEY,
-TOTAL_PAYED INT NOT NULL  check(total_payed >= 0),
-TOTAL_DUE     INT  NOT NULL,
+TOTAL_PAYED INT NOT NULL  default 0 check(total_payed >= 0),
+TOTAL_DUE      INT  default 0 NOT NULL,
 loyalty int default 0,
 NAME TEXT NOT NULL,
 PHONE_NO TEXT NOT NULL,
@@ -68,10 +68,12 @@ ACCESSOR_COST INT NOT NULL,
 QUANTITY_AVAILABLE INT NOT NULL
 );""")
 
-cur.execute("""CREATE TABLE ROOM(
+cur.execute("""
+create type rtype as enum ('premium','basic','ac','non-ac');
+CREATE TABLE ROOM(
 ROOM_NO int primary key,
 ROOM_COST INT ,
-ROOM_TYPE TEXT,
+ROOM_TYPE text,
 ROOM_SIZE INT
 );""")
 
@@ -80,7 +82,7 @@ cur.execute("""CREATE TABLE PAYMENTS
 PAYMENT_ID SERIAL PRIMARY KEY ,
 customer_ID SERIAL ,
 AMOUNT NUMERIC NOT NULL ,
-STATUS stat NOT NULL,
+STATUS text NOT NULL,
 PAYMENT_TYPE TEXT NOT NULL,
 SERVICE_ID INT ,
 ROOM_NO INT,
@@ -158,16 +160,17 @@ begin
 
 if exists
 (SELECT room_no 
-	from room where not exists ( select room_no from rooms_booked where (((room_indate between in_date and out_date))or(room_outdate between in_date and out_date )) and rooms_booked.room_no = room.room_no and room.room_type = type)AND ROOM_SIZE = SIZ)
+	from room where room_type = type and  ROOM_SIZE = SIZ and not exists ( select room_no from rooms_booked where (((room_indate between in_date and out_date))or(room_outdate between in_date and out_date )) and rooms_booked.room_no = room.room_no and room.room_type = type) )
 	
 then
-	select room_cost ,room_no into cost,rno  from room where not exists ( select room_no from rooms_booked where (((room_indate between in_date and out_date))or(room_outdate between in_date and out_date )) and rooms_booked.room_no = room.room_no and room.room_type = type) AND ROOM_SIZE = SIZ limit 1 ;
+	select room_cost ,room_no into cost,rno  from room where room_type = type and ROOM_SIZE = SIZ and not exists ( select room_no from rooms_booked where (((room_indate between in_date and out_date))or(room_outdate between in_date and out_date )) and rooms_booked.room_no = room.room_no and room.room_type = type) limit 1 ;
 	
 	
 	insert into payments (customer_id,amount,status,payment_type,room_no,DATE_OF_INITIATION,DATE_OF_completion) values(cust_id,cost,'PAID','BOOKING',rno,now(),now()) returning payment_id into varu;
 	
 	
 	insert into rooms_booked values(varu,rno,in_date,out_date);
+	raise notice ' room was booked successfull';
 else 
 
  raise notice 'room on exact date was not availaible you can use closest function';
@@ -208,7 +211,7 @@ end;
 $$;
 """)
 cur.execute("""create trigger loyalty
-after update or insert
+after update of total_payed or insert
 on customer
 for each row 
 execute procedure makeloyal();
@@ -220,16 +223,16 @@ as $$
 begin
 	if new.status = 'due'
 	then
-	 update customer set customer.total_due = customer.total_due + new.amount;
+	 update customer set total_due = total_due + new.amount;
 	elsif new.status = 'paid'
 	then 
-	 update customer set customer.total_paid = customer.total_paid + new.amount;
+	 update customer set total_payed = total_payed + new.amount;
 	elsif new.status = 'cancelled' and old.status = 'due'
 	then
-	 update customer set customer.total_due = customer.total_due - new.amount;
+	 update customer set total_due = total_due - new.amount;
 	elsif new.status = 'cancelled' and old.status = 'paid'
 	then
-	 update customer set customer.total_paid = customer.total_paid - new.amount;
+	 update customer set total_payed = total_payed - new.amount;
 	end if;
 	return new;
 	
@@ -273,9 +276,11 @@ declare
 	cus int;
 
 begin
-		if exists (select accesor_cost*quantity into cus from accessory where accessory_id = id and quantity <= QUANTITY_AVAILABLE)
+		if exists (select accessory.accessor_cost from accessory where accessory_id = id and quantity <= QUANTITY_AVAILABLE)
 		then
-		insert into payments(customer_id,amount,status,payment_type,accessory_id,DATE_OF_INITIATION) values(customerid,cus,'accessory',id,current_timestamp);
+		select accessory.accessor_cost into cus from accessory where accessory_id = id and quantity <= QUANTITY_AVAILABLE;
+		cus = cus*quantity;
+		insert into payments(customer_id,amount,status,payment_type,accessory_id,DATE_OF_INITIATION) values(customerid,cus,'paid','accessory',id,current_timestamp);
 		return 'accessory availaible inserted into payments';
 		else
 		insert into waiting(
@@ -330,8 +335,59 @@ after update
 on accessory
 for each row
 execute procedure funfindwho();
-""")
 
+
+CREATE OR REPLACE procedure forservice(cust_id int , in_date timestamp, out_date timestamp, whservice text )
+language plpgsql
+as $$
+declare
+	varu int;
+	rno int;
+	pid int;
+begin
+
+if exists
+(SELECT service_id from service where
+ service_type = whservice and 
+	not exists ( select service_id from service_taken where (((starttime between in_date and out_date))or(endtime between in_date and out_date )) and service.service_id= service_taken.service_id ))
+	
+then
+	SELECT service_id,service_rate into varu, rno 
+    from service where 
+    service_type = whservice and 
+	not exists ( select service_id from service_taken where (((starttime between in_date and out_date))or(endtime between in_date and out_date )) and service.service_id= service_taken.service_id ) limit 1;
+	
+	
+	insert into payments (customer_id,amount,status,payment_type,service_id,DATE_OF_INITIATION,DATE_OF_completion) values(cust_id,cast(rno as numeric),'PAID','SERVICE',varu,now(),now()) returning payment_id into pid;
+	
+	
+	insert into service_taken values(pid,varu,in_date,out_date);
+	raise notice 'service was availaible';
+else 
+
+ raise notice 'not availaible';
+ 
+
+end if;
+
+end;
+$$;
+
+""")
+vals = [[1,20,'premium',4],[2,10,'basic',3],[3,5,'ac',5],[4,5,'non-ac',2]]
+for val in vals:
+    cur.execute('insert into room values(%s,%s,%s,%s)',val)
+
+vals = [[1,'bed',5,4],[2,'brush',5,3],[3,'soap',5,5],[4,'pillow',5,2]]
+for val in vals:
+    cur.execute('insert into accessory values(%s,%s,%s,%s)',val)
+vals = [[1,'massage',5],[2,'roomclean',5],[3,'laundry',5],[4,'satishservice',5]]
+for val in vals:
+    cur.execute('insert into service values(%s,%s,%s)',val)
+cur.execute("insert into customer values(1,0,0,0,'shubh','123',12,current_timestamp)")
+cur.execute("insert into customer values(2,0,0,0,'pratham','123',12,current_timestamp)")
+cur.execute("delete from customer ")
+cur.execute("insert into customer values(1,0,0,0,'shubh','123',12,current_timestamp)")
 conn.commit()
 
 cur.close()

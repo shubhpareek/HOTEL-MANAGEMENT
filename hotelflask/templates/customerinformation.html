@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <center>
+        <nav>
+            <a href="{{ url_for('recepage') }}">reception page</a>
+        </nav>
+        
+    </center>
+    <h1>{% block title %} closest dates {% endblock %}</h1>
+    <table>
+        <tr><th>customer_id</th><th>total payed </th><th> total due </th><th>loyalty</th><th>name</th><th>phone_no</th><th>age</th></tr>
+    {% for book in books %}
+            <tr>
+            <td>{{book[0]}}</td>  <td>{{book[1]}}</td>
+            <td>{{book[2]}}</td><td>{{book[3]}}</td>
+            <td>{{book[4]}}</td><td>{{book[5]}}</td>
+            <td>{{book[6]}}</td>
+            </tr>
+    {% endfor %}
+    </table>
+{% endblock %}

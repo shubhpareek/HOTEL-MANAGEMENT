@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<p>manager</p>
+<form method="post">
+    <p>
+        <label for="username">USERNAME </label>
+        <input type="text" name="username"
+               placeholder="">
+        </input>
+    </p>
+
+    <p>
+        <label for="password">PASSWORD</label>
+        <input type="password" name="password"
+               placeholder="">
+        </input>
+    </p>
+
+    <p>
+        <button type="submit">Submit</button>
+    </p>
+</form>
+{% endblock %}
