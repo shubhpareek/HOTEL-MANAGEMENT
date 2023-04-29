@@ -307,3 +307,28 @@ def payment(customer_id):
             return redirect(url_for('receptionist'))
     else:
         return render_template('payment.html',message="payment failed")
+
+
+@app.route('/cancelbooking/',methods = ['GET','POST'])
+def cancelbooking():
+    if request.method == 'POST':
+        customer_id= request.form['customer_id']
+        # print(indate,outdate) 
+        try:
+            conn = get_db_connection1(session['username'],session['password'])
+            cur = conn.cursor()
+            cur.execute("""
+            select * from payments where customer_id = %s and 
+            payment_type='BOOKING' AND date_of_initiation >= current_timestamp;
+            """,[customer_id])
+            vv = cur.fetchall()
+            print(vv)
+            print("hellllo")
+            conn.commit()
+            cur.close()
+            conn.close()
+            return render_template('cancelbooking.html',books=vv)
+        except Exception as e:
+            print(e)
+            return redirect(url_for('receptionist'))
+    return render_template('cancelbooking1.html')

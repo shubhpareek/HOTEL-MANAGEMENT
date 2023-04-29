@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<table>
+    <tr><th> amount </th><th>type </th><th>size </th><th>status </th><th>room_no</th><th>date of initiation</th></tr>
+{% for book in books %}
+        <tr>
+        <td>{{book[0]}}</td>  <td>{{book[1]}}</td>
+        <td>{{book[2]}}</td><td>{{book[3]}}</td>
+        <td>{{book[4]}}</td><td>{{book[5]}}</td>
+        <td>
+            <form method="post">
+                <p>
+                    <button type="submit">Cancel</button>
+                </p>
+              </form>
+        </td>
+        </tr>
+{% endfor %}
+</table>
+{% endblock %}
