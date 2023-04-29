@@ -388,6 +388,18 @@ cur.execute("insert into customer values(1,0,0,0,'shubh','123',12,current_timest
 cur.execute("insert into customer values(2,0,0,0,'pratham','123',12,current_timestamp)")
 cur.execute("delete from customer ")
 cur.execute("insert into customer values(1,0,0,0,'shubh','123',12,current_timestamp)")
+
+cur.execute("""
+CREATE OR REPLACE procedure finalpayment(cust_id int)
+language plpgsql
+as $$
+begin
+update payments set status='paid' where customer_ID=cust_id;
+update customer set lastexit=current_timestamp; 
+end;
+$$;
+""")
+
 conn.commit()
 
 cur.close()

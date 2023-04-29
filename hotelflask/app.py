@@ -206,12 +206,15 @@ def finalbill():
             where payments.customer_id = %s and DATE_OF_INITIATION > lastexit and customer.customer_id = payments.customer_id;
             """,[customer_id])
             vv = cur.fetchall()
+            cur.execute("""select sum(amount) from payments,customer
+            where payments.customer_id = %s and DATE_OF_INITIATION > lastexit and customer.customer_id = payments.customer_id;""",[customer_id])
+            total = cur.fetchall();
             print(vv)
             print("hellllo")
             conn.commit()
             cur.close()
             conn.close()
-            return render_template('finalbill.html',books=vv)
+            return render_template('finalbill.html',books=vv,customer_id=customer_id,total=total[0][0])
         except Exception as e:
             print(e)
             return redirect(url_for('receptionist'))
@@ -287,3 +290,20 @@ def addaccessory():
             return redirect(url_for('manager'))
     else:
         return render_template('addaccessory.html')
+    
+@app.route('/payment/<customer_id>',methods=('GET','POST'))
+def payment(customer_id):
+    if request.method == 'POST':
+        try:
+            conn = get_db_connection1(session['username'],session['password'])
+            cur = conn.cursor()
+            cur.execute("call finalpayment(%s)",customer_id)
+            conn.commit()
+            cur.close()
+            conn.close()
+            return render_template('payment.html',message="payment done")
+        except Exception as e:  
+            print(e)
+            return redirect(url_for('receptionist'))
+    else:
+        return render_template('payment.html',message="payment failed")

@@ -436,3 +436,13 @@ query for finall bill
 
 select payments.payment_type,amount,status,DATE_OF_INITIATION from payments,customer
 where payments.customer_id = %s% and DATE_OF_INITIATION > lastexit and customer.customer_id = payments.customer_id;
+
+
+CREATE OR REPLACE procedure finalpayment(cust_id int)
+language plpgsql
+as $$
+begin
+update payments set status='paid' where customer_ID=cust_id;
+update customer set lastexit=current_timestamp; 
+end;
+$$;

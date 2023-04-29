@@ -7,7 +7,7 @@
         </nav>
         
     </center>
-    <h1>{% block title %} closest dates {% endblock %}</h1>
+    <h1>{% block title %} Bill {% endblock %}</h1>
     <table>
         <tr><th>type of payment </th><th> amount </th><th>status </th><th>date of initiation</th></tr>
     {% for book in books %}
@@ -17,4 +17,10 @@
             </tr>
     {% endfor %}
     </table>
+    <p>Total : {{total}}</p>
+    <form action="/payment/{{customer_id}}" method="post">
+        <p>
+            <button type="make payment">Make payment</button>
+        </p>
+    </form>
 {% endblock %}
