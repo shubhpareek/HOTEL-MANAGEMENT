@@ -1,6 +1,6 @@
 import os
 import psycopg2
-from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT, AsIs
 conn = psycopg2.connect(
         host="localhost",
         database="postgres",
@@ -12,10 +12,36 @@ conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 cur = conn.cursor()
 
 # Execute a command: this creates a new table
-cur.execute("DROP DATABASE IF EXISTS hotell;")
-cur.execute('CREATE DATABASE hotell;')
+cur.execute("""DROP DATABASE IF EXISTS hotell;""")
 cur.close()
 conn.close()
+
+conn = psycopg2.connect(
+        host="localhost",
+        database="postgres",
+        user='newuser',
+        password='password')
+cur = conn.cursor()
+cur.execute('drop role if exists receptionist;')
+cur.execute('drop role if exists manager;')
+for i in range(1,7):
+    cur.execute('drop role if exists %s;',[AsIs('worker'+str(i))])
+conn.commit()
+cur.close()
+conn.close()
+
+conn = psycopg2.connect(
+        host="localhost",
+        database="postgres",
+        user='newuser',
+        password='password')
+conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+cur = conn.cursor()
+cur.execute('create database hotell;')
+cur.close()
+conn.close()
+
+
 conn = psycopg2.connect(
         host="localhost",
         database="hotell",
@@ -23,6 +49,7 @@ conn = psycopg2.connect(
         password='password')
 cur = conn.cursor()
 cur.execute("""
+
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'stat') THEN
@@ -46,13 +73,20 @@ END$$;
 cur.execute("""CREATE TABLE customer(
 customer_ID SERIAL PRIMARY KEY,
 TOTAL_PAYED INT NOT NULL  default 0 check(total_payed >= 0),
-TOTAL_DUE      INT  default 0 NOT NULL,
-loyalty int default 0,
+TOTAL_DUE      INT  default 0 check(total_due >= 0) NOT NULL,
+loyalty int default 0 check(loyalty >= 0),
 NAME TEXT NOT NULL,
 PHONE_NO TEXT NOT NULL,
-AGE INT,
+AGE INT check(age >= 0),
 lastexit timestamp 
-);""")
+);
+
+create table message(
+	time timestamp,
+	source text,
+	msg text
+)
+""")
 
 cur.execute("""CREATE TABLE SERVICE(
 SERVICE_ID  INT PRIMARY KEY ,
@@ -64,8 +98,8 @@ cur.execute("""CREATE TABLE ACCESSORY
 (
 ACCESSORY_ID  INT PRIMARY KEY, 
 ACCESSORY_TYPE TEXT NOT NULL,
-ACCESSOR_COST INT NOT NULL, 
-QUANTITY_AVAILABLE INT NOT NULL
+ACCESSOR_COST INT NOT NULL check(ACCESSOR_COST >= 0), 
+QUANTITY_AVAILABLE INT NOT NULL check(QUANTITY_AVAILABLE >= 0)
 );""")
 
 cur.execute("""
@@ -81,7 +115,7 @@ cur.execute("""CREATE TABLE PAYMENTS
 (
 PAYMENT_ID SERIAL PRIMARY KEY ,
 customer_ID SERIAL ,
-AMOUNT NUMERIC NOT NULL ,
+AMOUNT NUMERIC NOT NULL check(AMOUNT >= 0),
 STATUS text NOT NULL,
 PAYMENT_TYPE TEXT NOT NULL,
 SERVICE_ID INT ,
@@ -157,7 +191,8 @@ declare
 	cost numeric;
 	rno int;
 begin
-
+lock payments in access exclusive mode;
+lock rooms_booked in access exclusive mode;
 if exists
 (SELECT room_no 
 	from room where room_type = type and  ROOM_SIZE = SIZ and not exists ( select room_no from rooms_booked where (((room_indate between in_date and out_date))or(room_outdate between in_date and out_date )) and rooms_booked.room_no = room.room_no and room.room_type = type) )
@@ -166,13 +201,15 @@ then
 	select room_cost ,room_no into cost,rno  from room where room_type = type and ROOM_SIZE = SIZ and not exists ( select room_no from rooms_booked where (((room_indate between in_date and out_date))or(room_outdate between in_date and out_date )) and rooms_booked.room_no = room.room_no and room.room_type = type) limit 1 ;
 	
 	
-	insert into payments (customer_id,amount,status,payment_type,room_no,DATE_OF_INITIATION,DATE_OF_completion) values(cust_id,cost,'PAID','BOOKING',rno,now(),now()) returning payment_id into varu;
+	insert into payments (customer_id,amount,status,payment_type,room_no,DATE_OF_INITIATION,DATE_OF_completion) values(cust_id,ceil(cost*(extract (epoch from out_date - in_date))/3600),'PAID','BOOKING',rno,now(),now()) returning payment_id into varu;
 	
 	
 	insert into rooms_booked values(varu,rno,in_date,out_date);
+	insert into message values(current_timestamp,'system','room was booked');
 	raise notice ' room was booked successfull';
 else 
 
+insert into message values(current_timestamp,'system','room could not be booked');
  raise notice 'room on exact date was not availaible you can use closest function';
  
 
@@ -192,13 +229,14 @@ begin
  
  update customer set loyalty = 2 
  where new.customer_id = customer.customer_id;
- 
+ insert into message values(current_timestamp,'system','a customer became loyal of second level') ;
  return new;
  elsif new.total_payed > 1000
  then 
  
  update customer set loyalty = 1
  where new.customer_id = customer.customer_id;
+ insert into message values(current_timestamp,'system','a customer became loyal of first level') ;
  
  return new;
  else
@@ -250,7 +288,7 @@ returns table (inn_date timestamp,outt_date timestamp)
 language plpgsql
 as $$
 begin
-	return query (select t.day,t.day + interval '4 day' from
+	return query (select t.day,t.day +   (out_date - in_date ) from
 (SELECT * FROM   generate_series
 
 (in_date, in_date + interval '30 day', interval  '1 day') )AS t(day)
@@ -288,6 +326,7 @@ begin
 	accessory_id ,
 	quantity ,
 	beffore) values(customerid,id,quantity,whenn);
+		insert into message values(current_timestamp,'system','an accessory was not found ,it will be availaible when manager updates');
 		return 'accessory not availaible currently so inserted in waiting';
 		end if;
 end;
@@ -323,6 +362,7 @@ begin
 		 	
 			insert into payments(customer_id,amount,status,payment_type,accessory_id,DATE_OF_INITIATION) values(cus,new.ACCESSOR_COST*wq,'due','accessory',iid,current_timestamp); 
 			update accessory set QUANTITY_AVAILABLE = QUANTITY_AVAILABLE - wq where accessory_id = iid;
+		insert into message values(current_timestamp,'system','an accessory was found that was in waiting list');
 		return new;
 		end if;
 		return new;
@@ -358,13 +398,16 @@ then
 	not exists ( select service_id from service_taken where (((starttime between in_date and out_date))or(endtime between in_date and out_date )) and service.service_id= service_taken.service_id ) limit 1;
 	
 	
-	insert into payments (customer_id,amount,status,payment_type,service_id,DATE_OF_INITIATION,DATE_OF_completion) values(cust_id,cast(rno as numeric),'PAID','SERVICE',varu,now(),now()) returning payment_id into pid;
+	insert into payments (customer_id,amount,status,payment_type,service_id,DATE_OF_INITIATION,DATE_OF_completion) values(cust_id,cast(ceil(rno*(extract (epoch from out_date - in_date))/3600) as numeric),'PAID','SERVICE',varu,now(),now()) returning payment_id into pid;
 	
 	
 	insert into service_taken values(pid,varu,in_date,out_date);
+		insert into message values(current_timestamp,'system','an service was allotted');
+
 	raise notice 'service was availaible';
 else 
 
+		insert into message values(current_timestamp,'system','an service was not availaible');
  raise notice 'not availaible';
  
 
@@ -378,12 +421,15 @@ vals = [[1,20,'premium',4],[2,10,'basic',3],[3,5,'ac',5],[4,5,'non-ac',2]]
 for val in vals:
     cur.execute('insert into room values(%s,%s,%s,%s)',val)
 
-vals = [[1,'bed',5,4],[2,'brush',5,3],[3,'soap',5,5],[4,'pillow',5,2]]
+vals = [[1,'bed',5,4],[2,'brush',5,3],[3,'soap',5,5],[4,'pillow',5,2],[5,'freshair',0,0]]
 for val in vals:
     cur.execute('insert into accessory values(%s,%s,%s,%s)',val)
-vals = [[1,'massage',5],[2,'roomclean',5],[3,'laundry',5],[4,'satishservice',5]]
+vals = [[1,'massage',5],[2,'roomclean',5],[3,'laundry',5],[4,'satishservice',5],[5,'massage',5],[6,'satishservice',5]]
 for val in vals:
     cur.execute('insert into service values(%s,%s,%s)',val)
+    cur.execute('create view %s as (select * from service_taken where service_id = %s and endtime >= current_timestamp);',[AsIs('for'+str(val[0])+'viewer'),str(val[0])])
+    cur.execute('create role %s login password %s;',[AsIs('worker'+str(val[0])),'password'])
+    cur.execute('grant select on %s to %s;',[AsIs('for'+str(val[0])+'viewer'),AsIs('worker'+str(val[0]))])
 cur.execute("insert into customer values(1,0,0,0,'shubh','123',12,current_timestamp)")
 cur.execute("insert into customer values(2,0,0,0,'pratham','123',12,current_timestamp)")
 cur.execute("delete from customer ")
@@ -398,6 +444,25 @@ update payments set status='paid' where customer_ID=cust_id;
 update customer set lastexit=current_timestamp; 
 end;
 $$;
+create index roomsearchhelper on rooms_booked using btree(room_indate,room_outdate) INCLUDE(room_no);
+insert into message values(current_timestamp,'owner','hello , this is the first messge');
+
+create role receptionist login password 'password';
+
+grant select on room,service,accessory,payments to receptionist;
+
+grant select on rooms_booked to receptionist;
+
+grant select,insert,delete,update on customer,message to receptionist;
+grant insert,delete,update on payments to receptionist;
+grant insert,delete,update on rooms_booked to receptionist;
+
+create role manager login password 'password' ;
+
+grant select,insert,delete,update on accessory to manager;
+
+create view not_available_accessory as (select * from accessory where quantity_available = 0);
+
 """)
 
 conn.commit()

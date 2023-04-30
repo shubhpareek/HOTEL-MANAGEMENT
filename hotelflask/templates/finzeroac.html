@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <center>
+        <nav>
+            <a href="{{ url_for('manpage') }}">manager page</a>
+        </nav>
+        
+    </center>
+    <h1>{% block title %} accessory not availaible {% endblock %}</h1>
+    <table>
+        <tr><th>ACCESSORY_ID</th><th> ACCESSORY_TYPE </th><th>ACCESSORY_COST </th></tr>
+    {% for book in books %}
+            <tr>
+            <td>{{book[0]}}</td>  <td>{{book[1]}}</td>
+            <td>{{book[2]}}</td>
+            </tr>
+    {% endfor %}
+    </table>
+{% endblock %}

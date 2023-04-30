@@ -1,7 +1,17 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<center>
+
+
 <a href="{{url_for('receptionist')}}">receptionist</a>
 <br>
 <a href="{{url_for('manager')}}">manager</a>
+<br>
+<a href="{{url_for('worker')}}">worker</a>
+<br>
+<a href="{{url_for('ADMIN')}}">ADMIN</a>
+<br>
+</center>
+
 {% endblock %}

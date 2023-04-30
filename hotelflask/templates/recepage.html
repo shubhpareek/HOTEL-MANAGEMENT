@@ -2,22 +2,51 @@
 {% block content %}
 <center>
 
-<a href="{{url_for('receptionist')}}">receptionist</a>
-<p>hello</p>
-<a href="{{url_for('roombook')}}">bookroom</a>
-<br>
-<a href="{{url_for('createcustomer')}}">create a customer</a>
-<br>
-<a href="{{url_for('closest')}}">find closest room availaible</a>
-<br>
-<a href="{{url_for('lookup')}}">lookup a accessory</a>
-<br>
-<a href="{{url_for('forservice')}}">check for a service</a>
-<br>
-<a href="{{url_for('finalbill')}}">finallbill for a customer </a>
-<br>
-<a href="{{url_for('customerinformation')}}">information of a customer </a>
-<br>
-<a href="{{url_for('cancelbooking')}}">cancel booking</a>
+    <a href="{{url_for('receptionist')}}">receptionist</a>
+    <p>hello</p>
+<table>
+    <tr><th><b>options</b></th><th><b>message</b></th></tr>
+    <tr><td>
+
+    <a href="{{url_for('roombook')}}">bookroom</a>
+    <br>
+    <a href="{{url_for('createcustomer')}}">create a customer</a>
+    <br>
+    <a href="{{url_for('closest')}}">find closest room availaible</a>
+    <br>
+    <a href="{{url_for('lookup')}}">lookup a accessory</a>
+    <br>
+    <a href="{{url_for('forservice')}}">check for a service</a>
+    <br>
+    <a href="{{url_for('finalbill')}}">finallbill for a customer </a>
+    <br>
+    <a href="{{url_for('customerinformation')}}">information of a customer </a>
+    <br>
+    <a href="{{url_for('messageforrecep')}}">message</a>
+    <br>
+    <a href="{{url_for('cancelbooking')}}">cancel booking</a>
+
+
+
+
+    </td><td>
+        
+        <table>
+            <tr><th>time</th><th>source</th><th>message</th></tr>
+            {% for mess in message %}
+                <tr>
+                    {% for muss in mess %}
+                        <td>
+                            {{muss}}
+                        </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </table>
+
+
+
+    </td></tr>
+</table>
 </center>
 {% endblock %}
