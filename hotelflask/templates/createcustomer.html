@@ -1,19 +1,28 @@
 
 {% extends 'base.html' %}
 {% block content %}
-<a href="{{url_for('receptionist')}}">receptionist</a>
+<a href="{{url_for('recepage')}}">reception page</a>
+<a href="{{url_for('customerinformation')}}">Customer Info</a>
+{% if error %}
+  <p style="color:red"><strong>Some error occoured, {{error}}</strong></p>
+{% endif %}
 
 <form method="post">
+  <p>
     <label for="name">Name:</label>
     <input type="text" id="name" name="name" required><br>
-  
-    <label for="phone">Phone number:</label>
-    <input type="tel" id="phone" name="phone" required><br>
-  
+  </p>
+  <p>
+        <label for="phone">Phone number:</label>
+        <input type="tel" id="phone" name="phone" required><br>
+  </p>
+  <p>
     <label for="age">Age:</label>
     <input type="number" id="age" name="age" required><br>
-  
-    <input type="submit" value="Submit">
-  </form>
+  </p>
+  <p>
+    <button type="submit"">Submit</button>
+  </p>
+ </form>
   
 {% endblock %}

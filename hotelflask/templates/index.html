@@ -1,17 +1,13 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<center>
-
-
-<a href="{{url_for('receptionist')}}">receptionist</a>
-<br>
-<a href="{{url_for('manager')}}">manager</a>
-<br>
-<a href="{{url_for('worker')}}">worker</a>
-<br>
-<a href="{{url_for('ADMIN')}}">ADMIN</a>
-<br>
-</center>
-
+    <div class="dropdown">
+        <button class="dropbtn">Login</button>
+        <div class="dropdown-content">
+            <a href="{{url_for('receptionist')}}">Receptionist</a>
+            <a href="{{url_for('manager')}}">Manager</a>
+            <a href="{{url_for('worker')}}">Worker</a>
+            <a href="{{url_for('ADMIN')}}">Admin</a>
+        </div>
+    </div>
 {% endblock %}

@@ -7,6 +7,10 @@
         </nav>
         
     </center>
+{% if error %}
+  <p style="color:red"><strong>Some error occoured, {{error}}</strong></p>
+{% endif %}
+
     <h1>{% block title %} closest dates {% endblock %}</h1>
     <table>
         <tr><th>start date </th><th>enddate</th></tr>

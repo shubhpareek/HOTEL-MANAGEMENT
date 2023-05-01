@@ -1,22 +1,26 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<a href="{{url_for('recepage')}}">reception page</a>
+{% if error %}
+    <p style="color:red"><strong>Some error occoured, {{error}}</strong></p>
+{% endif %}
 <form method="post">
     <p>
-        <label for="customer_id">customer_id </label>
+        <label for="customer_id">Customerid:</label>
         <input type="text" name="customer_id"
                placeholder="">
         </input>
     </p>
 
     <p>
-        <label for="indate">indate </label>
+        <label for="indate">In date-time:</label>
         <input type="datetime-local" name="indate"
                placeholder="">
         </input>
     </p>
     <p>
-        <label for="outdate">outdate </label>
+        <label for="outdate">Out date-time:</label>
         <input type="datetime-local" name="outdate"
                placeholder="">
         </input>

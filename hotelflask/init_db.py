@@ -73,16 +73,16 @@ END$$;
 cur.execute("""CREATE TABLE customer(
 customer_ID SERIAL PRIMARY KEY,
 TOTAL_PAYED INT NOT NULL  default 0 check(total_payed >= 0),
-TOTAL_DUE      INT  default 0 check(total_due >= 0) NOT NULL,
-loyalty int default 0 check(loyalty >= 0),
+TOTAL_DUE INT  default 0 check(total_due >= 0) NOT NULL,
+loyalty int default 0 check(loyalty >= 0 and loyalty <= 2),
 NAME TEXT NOT NULL,
 PHONE_NO TEXT NOT NULL,
-AGE INT check(age >= 0),
-lastexit timestamp 
+AGE INT check(age > 0),
+lastexit timestamp check(lastexit <= NOW()) 
 );
 
 create table message(
-	time timestamp,
+	time timestamp check(time <= NOW()),
 	source text,
 	msg text
 )
@@ -91,14 +91,14 @@ create table message(
 cur.execute("""CREATE TABLE SERVICE(
 SERVICE_ID  INT PRIMARY KEY ,
 SERVICE_TYPE TEXT NOT NULL,
-SERVICE_RATE INT NOT NULL 
+SERVICE_RATE INT NOT NULL check(service_rate > 0) 
 );""")
 
 cur.execute("""CREATE TABLE ACCESSORY
 (
 ACCESSORY_ID  INT PRIMARY KEY, 
 ACCESSORY_TYPE TEXT NOT NULL,
-ACCESSOR_COST INT NOT NULL check(ACCESSOR_COST >= 0), 
+ACCESSOR_COST INT NOT NULL check(ACCESSOR_COST > 0), 
 QUANTITY_AVAILABLE INT NOT NULL check(QUANTITY_AVAILABLE >= 0)
 );""")
 
@@ -106,19 +106,19 @@ cur.execute("""
 create type rtype as enum ('premium','basic','ac','non-ac');
 CREATE TABLE ROOM(
 ROOM_NO int primary key,
-ROOM_COST INT ,
+ROOM_COST INT check(room_cost > 0),
 ROOM_TYPE text,
-ROOM_SIZE INT
+ROOM_SIZE INT check(room_size > 0)
 );""")
 
 cur.execute("""CREATE TABLE PAYMENTS
 (
 PAYMENT_ID SERIAL PRIMARY KEY ,
-customer_ID SERIAL ,
-AMOUNT NUMERIC NOT NULL check(AMOUNT >= 0),
+customer_ID INT ,
+AMOUNT NUMERIC NOT NULL,
 STATUS text NOT NULL,
 PAYMENT_TYPE TEXT NOT NULL,
-SERVICE_ID INT ,
+SERVICE_ID INT,
 ROOM_NO INT,
 ACCESSORY_ID INT ,
 DATE_OF_INITIATION timestamp,
@@ -131,7 +131,12 @@ FOREIGN KEY(SERVICE_ID)
 REFERENCES SERVICE(SERVICE_ID),
 FOREIGN KEY(ACCESSORY_ID)
 REFERENCES ACCESSORY(ACCESSORY_ID)
-);""")
+);
+ALTER TABLE payments ADD CONSTRAINT pay_check
+CHECK (amount >=0 AND 
+date_of_initiation <= date_of_completion AND
+date_of_initiation <= NOW());
+""")
 
 
 cur.execute("""CREATE TABLE SERVICE_TAKEN(
@@ -143,8 +148,10 @@ foreign key(service_id)
 references service(service_id),
 foreign key(payment_id)
 references payments(payment_id)
-
-);""")
+);
+ALTER TABLE service_taken ADD CONSTRAINT ser_tak_check
+CHECK(starttime >= NOW() AND endtime >= starttime);
+""")
 
 cur.execute("""CREATE table rooms_booked (
 PAYMENT_ID SERIAL primary key,
@@ -155,13 +162,23 @@ foreign key(payment_id)
 references payments(payment_id),
 FOREIGN KEY(ROOM_NO)
 REFERENCES ROOM(ROOM_NO)
-);""")
+);
+ALTER TABLE rooms_booked ADD CONSTRAINT room_b_check
+CHECK(room_indate >= NOW() AND room_outdate >= room_indate)
+""")
+
 cur.execute("""create table logtable(
 SERVICE_ID  INT PRIMARY KEY ,
 SERVICE_TYPE TEXT NOT NULL,
 SERVICE_RATE INT NOT NULL ,
 time timestamp
-
+);
+create table waiting(
+	waiting_id serial primary key,
+	customer_id int ,
+	accessory_id int,
+	quantity int,
+	beffore timestamp
 );
 create or replace function insertlogtable()
 returns trigger 
@@ -299,13 +316,7 @@ begin
  
 end;
 $$;
-create table waiting(
-	waiting_id serial primary key,
-	customer_id int ,
-	accessory_id int,
-	quantity int,
-	beffore timestamp
-);
+
 create or replace function lookupacc(customerid int,id int,quantity int,whenn timestamp)
 returns text
 language plpgsql
@@ -421,7 +432,7 @@ vals = [[1,20,'premium',4],[2,10,'basic',3],[3,5,'ac',5],[4,5,'non-ac',2]]
 for val in vals:
     cur.execute('insert into room values(%s,%s,%s,%s)',val)
 
-vals = [[1,'bed',5,4],[2,'brush',5,3],[3,'soap',5,5],[4,'pillow',5,2],[5,'freshair',0,0]]
+vals = [[1,'bed',5,4],[2,'brush',5,3],[3,'soap',5,5],[4,'pillow',5,2],[5,'freshair',5,5]]
 for val in vals:
     cur.execute('insert into accessory values(%s,%s,%s,%s)',val)
 vals = [[1,'massage',5],[2,'roomclean',5],[3,'laundry',5],[4,'satishservice',5],[5,'massage',5],[6,'satishservice',5]]
@@ -433,7 +444,7 @@ for val in vals:
 cur.execute("insert into customer values(1,0,0,0,'shubh','123',12,current_timestamp)")
 cur.execute("insert into customer values(2,0,0,0,'pratham','123',12,current_timestamp)")
 cur.execute("delete from customer ")
-cur.execute("insert into customer values(1,0,0,0,'shubh','123',12,current_timestamp)")
+cur.execute("insert into customer(name,phone_no,age,lastexit) values('shubh','34','20',current_timestamp)")
 
 cur.execute("""
 CREATE OR REPLACE procedure finalpayment(cust_id int)
@@ -443,26 +454,24 @@ begin
 update payments set status='paid' where customer_ID=cust_id;
 update customer set lastexit=current_timestamp; 
 end;
-$$;
+$$;""")
+            
+cur.execute("""
 create index roomsearchhelper on rooms_booked using btree(room_indate,room_outdate) INCLUDE(room_no);
+""")
+cur.execute("""
 insert into message values(current_timestamp,'owner','hello , this is the first messge');
-
+""")
+cur.execute("""
 create role receptionist login password 'password';
+grant select on room,service,accessory to receptionist;
+grant select,insert,delete,update on service_taken,customer,message,payments,rooms_booked to receptionist;
+grant usage, select on all sequences in schema public to receptionist;	
 
-grant select on room,service,accessory,payments to receptionist;
-
-grant select on rooms_booked to receptionist;
-
-grant select,insert,delete,update on customer,message to receptionist;
-grant insert,delete,update on payments to receptionist;
-grant insert,delete,update on rooms_booked to receptionist;
-
-create role manager login password 'password' ;
-
-grant select,insert,delete,update on accessory to manager;
-
+create role manager login password 'password';
+grant select,insert,delete,update on accessory,message to manager;
 create view not_available_accessory as (select * from accessory where quantity_available = 0);
-
+grant select on not_available_accessory to manager;
 """)
 
 conn.commit()

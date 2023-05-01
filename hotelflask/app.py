@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, url_for, redirect,session
+from flask import Flask, render_template, request, url_for, redirect,session, flash
 
 from psycopg2.extensions import AsIs
 from dotenv import load_dotenv
@@ -23,48 +23,41 @@ def get_db_connection1(username,password):
 
 @app.route('/')
 def index():
-    conn = get_db_connection()
-    cur = conn.cursor()
-    # cur.execute('SELECT * FROM books;')
-    # books = cur.fetchall()
-    cur.close()
-    conn.close()
     return render_template('index.html')
-# ...
 
 @app.route('/receptionist/', methods=('GET', 'POST'))
 def receptionist():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        session['username']= username
-        session['password']= password
+        session['rusername']= username
+        session['rpassword']= password
 
         try:
             conn = get_db_connection1(username,password)
-            # render_template('recepage.html');
-            print("hellllo")
+            print("receptionist logged in")
             return redirect(url_for('recepage'))
-        except:
+        except Exception as e:
+            print(e)
             return render_template('receptionist.html')
 
     return render_template('receptionist.html')
 
 @app.route('/recepage/')
 def recepage():
-    # print("hello")
-    conn = get_db_connection1(session['username'],session['password'])
-    # render_template('recepage.html');
-
-    cur = conn.cursor()
-    cur.execute("select * from message order by time desc;")
-    print(cur.statusmessage)
-    msg = cur.fetchall() 
-    print("hellllo")
-    conn.commit()
-    cur.close()
-    conn.close()
-
+    try:
+        conn = get_db_connection1(session['rusername'],session['rpassword'])
+        cur = conn.cursor()
+        cur.execute("select * from message order by time desc;")
+        print(cur.statusmessage)
+        msg = cur.fetchall() 
+        print("hellllo")
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(e)
+        redirect(url_for('receptionist'))   
     return render_template('recepage.html',message=msg)
 
 @app.route('/roombook/',methods=('GET', 'POST'))
@@ -78,11 +71,8 @@ def roombook():
         typpe = request.form['type']
         indate = indate.replace('T',' ')
         outdate  = outdate.replace('T',' ')
-        # print(indate,outdate) 
         try:
-            conn = get_db_connection1(session['username'],session['password'])
-            # render_template('recepage.html');
-
+            conn = get_db_connection1(session['rusername'],session['rpassword'])
             cur = conn.cursor()
             cur.execute("CALL book_room(%s,%s,%s,%s,%s)",[customer_id,indate,outdate,typpe,size])
             print(cur.statusmessage)
@@ -94,32 +84,31 @@ def roombook():
             return render_template('message.html',message=msg)
         except Exception as e:
             print(e)
-            return redirect(url_for('receptionist'))
+            error = "check whether the in date-time is not in the past and in date-time is not after out date-time"
+            return render_template('roombook.html',error=error)
     return render_template('roombook.html')
+
 @app.route('/createcustomer/',methods=('GET','POST'))
 def createcustomer():
     
     if request.method == 'POST':
         name = request.form['name']
         phone = request.form['phone']
-        age = request.form['age']
-        # print(indate,outdate) 
+        age = request.form['age'] 
         try:
-            conn = get_db_connection1(session['username'],session['password'])
-            # render_template('recepage.html');
-
+            conn = get_db_connection1(session['rusername'],session['rpassword'])
             cur = conn.cursor()
             cur.execute('insert into customer(name,phone_no,age,lastexit) values(%s,%s,%s,current_timestamp)',[name,phone,age])
-            # msg = conn.notices[-1]
             print("hellllo")
             conn.commit()
             cur.close()
             conn.close()
             return render_template('message.html',message='created customer')
         except Exception as e:
-            print(e)
-            return redirect(url_for('receptionist'))
+            error = "check whether the age is greater than zero"
+            return render_template('createcustomer.html',error=error)
     return render_template('createcustomer.html')
+
 @app.route('/closest/',methods=('GET','POST'))
 def closest():
     if request.method == 'POST':
@@ -129,26 +118,22 @@ def closest():
         typpe = request.form['type']
         indate = indate.replace('T',' ')
         outdate  = outdate.replace('T',' ')
-        # print(indate,outdate) 
         try:
-            conn = get_db_connection1(session['username'],session['password'])
-            # render_template('recepage.html');
-
+            conn = get_db_connection1(session['rusername'],session['rpassword'])
             cur = conn.cursor()
             cur.execute("select closest(%s,%s,%s,%s)",[indate,outdate,typpe,size])
             vv = cur.fetchall()
-            # print(vv)
-            # for x in vv:
-            #     print(x)
             conn.commit()
             cur.close()
             conn.close()
             return render_template('closest.html',books=vv)
         except Exception as e:
             print(e)
-            return redirect(url_for('receptionist'))
+            error = "check whether the in date-time is not in the past and in date-time is not after out date-time"
+            return redirect(url_for('receptionist',error=error))
     else:
         return render_template('closest1.html')
+
 @app.route('/lookup/',methods=['GET','POST'])
 def lookup():
     if request.method == 'POST':
@@ -157,26 +142,21 @@ def lookup():
         quantity = request.form['quantity']
         type = request.form['type']
         when = when.replace('T',' ')
-        # print(indate,outdate) 
         try:
-            conn = get_db_connection1(session['username'],session['password'])
-            # render_template('recepage.html');
-
+            conn = get_db_connection1(session['rusername'],session['rpassword'])
             cur = conn.cursor()
             cur.execute("select lookupacc(%s,%s,%s,%s)",[customer_id,type,quantity,when])
             vv = cur.fetchall()
-            # print(vv)
-            # for x in vv:
-            #     print(x)
             conn.commit()
             cur.close()
             conn.close()
             return render_template('message.html',message=vv)
         except Exception as e:
             print(e)
-            return redirect(url_for('receptionist'))
+            return render_template('lookup.html')
     else:
         return render_template('lookup.html')
+
 @app.route('/forservice/',methods=('GET', 'POST'))
 def forservice():
     if request.method == 'POST':
@@ -186,11 +166,8 @@ def forservice():
         typpe = request.form['type']
         indate = indate.replace('T',' ')
         outdate  = outdate.replace('T',' ')
-        # print(indate,outdate) 
         try:
-            conn = get_db_connection1(session['username'],session['password'])
-            # render_template('recepage.html');
-
+            conn = get_db_connection1(session['rusername'],session['rpassword'])
             cur = conn.cursor()
             cur.execute("CALL forservice(%s,%s,%s,%s)",[customer_id,indate,outdate,typpe])
             print(cur.statusmessage)
@@ -202,17 +179,16 @@ def forservice():
             return render_template('message.html',message=msg)
         except Exception as e:
             print(e)
-            return redirect(url_for('receptionist'))
+            error = "check whether start date-time is not in the past and start date-time is not after end date-time"
+            return render_template("forservice.html",error=error)
     return render_template('forservice.html')
+
 @app.route('/finalbill/',methods = ['GET','POST'])
 def finalbill():
     if request.method == 'POST':
         customer_id= request.form['customer_id']
-        # print(indate,outdate) 
         try:
-            conn = get_db_connection1(session['username'],session['password'])
-            # render_template('recepage.html');
-
+            conn = get_db_connection1(session['rusername'],session['rpassword'])
             cur = conn.cursor()
             cur.execute("""
             select payments.payment_type,amount,status,DATE_OF_INITIATION from payments,customer
@@ -236,15 +212,13 @@ def finalbill():
             print(e)
             return redirect(url_for('receptionist'))
     return render_template('finalbill1.html')
+
 @app.route('/customerinformation/',methods = ['GET','POST'])
 def customerinformation():
     if request.method == 'POST':
         customer_id= request.form['customer_id']
-        # print(indate,outdate) 
         try:
-            conn = get_db_connection1(session['username'],session['password'])
-            # render_template('recepage.html');
-
+            conn = get_db_connection1(session['rusername'],session['rpassword'])
             cur = conn.cursor()
             cur.execute("""
             select * from customer where name like %s
@@ -260,70 +234,12 @@ def customerinformation():
             print(e)
             return redirect(url_for('receptionist'))
     return render_template('customerinformation1.html')
-@app.route('/manager/', methods=('GET', 'POST'))
-def manager():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        session['username1']= username
-        session['password1']= password
 
-        try:
-            conn = get_db_connection1(username,password)
-            # render_template('recepage.html');
-            print("hellllo")
-            return redirect(url_for('manpage'))
-        except:
-            return render_template('manager.html')
-
-    return render_template('manager.html')
-@app.route('/manpage/')
-def manpage():
-    # print("hello")
-    conn = get_db_connection1(session['username'],session['password'])
-    # render_template('recepage.html');
-
-    cur = conn.cursor()
-    cur.execute("select * from message order by time desc;")
-    print(cur.statusmessage)
-    msg = cur.fetchall() 
-    print("hellllo")
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    return render_template('manpage.html',message=msg)
-@app.route('/addaccessory/',methods = ['GET','POST'])
-def addaccessory():
-    if request.method == 'POST':
-        accessory_id = request.form['accessory_id']
-        quantity = request.form['quantity']
-        # print(indate,outdate) 
-        try:
-            conn = get_db_connection1(session['username1'],session['password1'])
-            # render_template('recepage.html');
-
-            cur = conn.cursor()
-            cur.execute("update accessory set quantity = %s where accessory_id = %s",[quantity,accessory_id])
-            vv = cur.statusmessage
-            # print(vv)
-            # for x in vv:
-            #     print(x)
-            conn.commit()
-            cur.close()
-            conn.close()
-            return render_template('message2.html',message=vv)
-        except Exception as e:
-            print(e)
-            return redirect(url_for('manager'))
-    else:
-        return render_template('addaccessory.html')
-    
 @app.route('/payment/<customer_id>',methods=('GET','POST'))
 def payment(customer_id):
     if request.method == 'POST':
         try:
-            conn = get_db_connection1(session['username'],session['password'])
+            conn = get_db_connection1(session['rusername'],session['rpassword'])
             cur = conn.cursor()
             cur.execute("call finalpayment(%s)",customer_id)
             conn.commit()
@@ -335,13 +251,11 @@ def payment(customer_id):
             return redirect(url_for('receptionist'))
     else:
         return render_template('message.html',message="payment failed")
-
-
+    
 @app.route('/cancelbooking/',methods = ['GET','POST'])
 def cancelbooking():
     if request.method == 'POST':
         customer_id= request.form['customer_id']
-        # print(indate,outdate) 
         try:
             conn = get_db_connection1(session['username'],session['password'])
             cur = conn.cursor()
@@ -360,6 +274,7 @@ def cancelbooking():
             print(e)
             return redirect(url_for('receptionist'))
     return render_template('cancelbooking1.html')
+
 @app.route('/cancel/<payment_id>',methods = ['GET','POST'])
 def cancel(payment_id):
 
@@ -373,86 +288,176 @@ def cancel(payment_id):
     cur.close()
     conn.close()
     return render_template('message.html',message ='booking of payment id '+str(payment_id)+'was deleted' )
+
+@app.route('/messageforrecep/',methods=['GET','POST'])
+def messageforrecep():
+    if request.method == 'POST':
+        customer_id= request.form['message']
+        try:
+            conn = get_db_connection1(session['rusername'],session['rpassword'])
+            cur = conn.cursor()
+            cur.execute("""
+            insert into message values(current_timestamp,'receptionist',%s);
+            """,[customer_id])
+            conn.commit()
+            cur.close()
+            conn.close()
+            return render_template('message.html',message='message sent successfully')
+        except Exception as e:
+            print(e)
+            return redirect(url_for('receptionist'))
+    return render_template('takemessage.html')
+ 
+@app.route('/manager/', methods=('GET', 'POST'))
+def manager():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        session['musername']= username
+        session['mpassword']= password
+        try:
+            conn = get_db_connection1(username,password)
+            print("hellllo")
+            return redirect(url_for('manpage'))
+        except:
+            return render_template('manager.html')
+
+    return render_template('manager.html')
+
+@app.route('/manpage/')
+def manpage():
+    conn = get_db_connection1(session['musername'],session['mpassword'])
+    cur = conn.cursor()
+    cur.execute("select * from message order by time desc;")
+    print(cur.statusmessage)
+    msg = cur.fetchall() 
+    print("hellllo")
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return render_template('manpage.html',message=msg)
+
+@app.route('/addaccessory/',methods = ['GET','POST'])
+def addaccessory():
+    if request.method == 'POST':
+        accessory_id = request.form['accessory_id']
+        quantity = request.form['quantity'] 
+        try:
+            conn = get_db_connection1(session['musername'],session['mpassword'])
+            cur = conn.cursor()
+            cur.execute("update accessory set quantity = %s where accessory_id = %s",[quantity,accessory_id])
+            vv = cur.statusmessage
+            conn.commit()
+            cur.close()
+            conn.close()
+            return render_template('message2.html',message=vv)
+        except Exception as e:
+            print(e)
+            return redirect(url_for('manager'))
+    else:
+        return render_template('addaccessory.html')
+    
+@app.route('/finzeroac/')
+def finzeroac():
+    try:
+        conn = get_db_connection1(session['musername'],session['mpassword'])
+        cur = conn.cursor()
+        cur.execute("""
+        select * from not_available_accessory;
+        """)
+        vv = cur.fetchall()
+        print(vv)
+        conn.commit()
+        cur.close()
+        conn.close()
+        return render_template('finzeroac.html',books=vv)
+    except Exception as e:
+        print(e)
+    return redirect(url_for('manager'))
+
+@app.route('/messageforman/',methods=['GET','POST'])
+def messageforman():
+    if request.method == 'POST':
+        customer_id= request.form['message']
+        try:
+            conn = get_db_connection1(session['musername'],session['mpassword'])
+            cur = conn.cursor()
+            cur.execute("""
+            insert into message values(current_timestamp,'manager',%s);
+            """,[customer_id])
+            conn.commit()
+            cur.close()
+            conn.close()
+            return render_template('message2.html',message='message sent successfully')
+        except Exception as e:
+            print(e)
+            return redirect(url_for('manager'))
+    return render_template('takemessage.html')
+        
 @app.route('/worker/', methods=('GET', 'POST'))
 def worker():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        session['username2']= username
-        session['password2']= password
+        session['wusername']= username
+        session['wpassword']= password
 
         try:
             conn = get_db_connection1(username,password)
-            # render_template('recepage.html');
             print("hellllo")
             return redirect(url_for('workpage'))
         except:
             return render_template('worker.html')
 
     return render_template('worker.html')
+
 @app.route('/workpage/')
 def workpage():
-    # print("hello")
+    num = session['wusername'].replace('worker','')
+    conn = get_db_connection1(session['wusername'],session['wpassword'])
+    cur = conn.cursor()
+    cur.execute("""select * from %s;""",[AsIs('for'+num+'viewer')])
+    vv = cur.fetchall()
+    conn.commit()
+    cur.close()
+    conn.close()
+    return render_template('workpage.html',books=vv)
 
-    return render_template('workpage.html')
-@app.route('/seeservice/',methods = ['GET','POST'])
-def seeservice():
-    if request.method == 'POST':
-        service_id= request.form['service_id']
-        # print(indate,outdate) 
-        try:
-            conn = get_db_connection1(session['username'],session['password'])
-            cur = conn.cursor()
-            cur.execute("""
-            select * from %s;
-            """,[AsIs('for'+str(service_id)+'viewer')])
-            vv = cur.fetchall()
-            print(vv)
-            print("hellllo")
-            conn.commit()
-            cur.close()
-            conn.close()
-            return render_template('seeservice1.html',books=vv)
-        except Exception as e:
-            print(e)
-            return redirect(url_for('worker'))
-    return render_template('seeservice.html')
+
 @app.route('/ADMIN/', methods=('GET', 'POST'))
 def ADMIN():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        session['username2']= username
-        session['password2']= password
+        session['ausername']= username
+        session['apassword']= password
 
         try:
             conn = get_db_connection1(username,password)
-            # render_template('recepage.html');
             print("hellllo")
             return redirect(url_for('ADMINPAGE'))
         except:
             return render_template('ADMIN.html')
 
     return render_template('ADMIN.html')
+
 @app.route('/ADMINPAGE/')
 def ADMINPAGE():
-    # print("hello")
-
     return render_template('ADMINPAGE.html')
+
 @app.route('/seequery/',methods = ['GET','POST'])
 def seequery():
     if request.method == 'POST':
         query= request.form['query']
-        # print(indate,outdate) 
         try:
-            conn = get_db_connection1(session['username'],session['password'])
+            conn = get_db_connection1(session['ausername'],session['apassword'])
             cur = conn.cursor()
             cur.execute("""
             %s
             """,[AsIs(query)])
             xx= cur.description
             print(xx)
-
             vv = cur.fetchall()
             print(vv)
             print("hellllo")
@@ -464,70 +469,4 @@ def seequery():
             print(e)
             return redirect(url_for('ADMIN'))
     return render_template('seequery1.html')
-@app.route('/finzeroac/')
-def finzeroac():
-    try:
-        conn = get_db_connection1(session['username1'],session['password1'])
-        cur = conn.cursor()
-        cur.execute("""
-        select * from not_available_accessory;
-        """)
-
-        vv = cur.fetchall()
-        print(vv)
-        conn.commit()
-        cur.close()
-        conn.close()
-        return render_template('finzeroac.html',books=vv)
-    except Exception as e:
-        print(e)
-        return redirect(url_for('manager'))
-    return render_template('seequery1.html')
-@app.route('/messageforman/',methods=['GET','POST'])
-def messageforman():
-    if request.method == 'POST':
-        customer_id= request.form['message']
-        # print(indate,outdate) 
-        try:
-            conn = get_db_connection1(session['username'],session['password'])
-            # render_template('recepage.html');
-
-            cur = conn.cursor()
-            cur.execute("""
-            insert into message values(current_timestamp,'manager',%s);
-            """,[customer_id])
-            # vv = cur.fetchall()
-            # print(vv)
-            conn.commit()
-            cur.close()
-            conn.close()
-            return render_template('message2.html',message='message sent successfully')
-        except Exception as e:
-            print(e)
-            return redirect(url_for('manager'))
-    return render_template('takemessage.html')
-        
-@app.route('/messageforrecep/',methods=['GET','POST'])
-def messageforrecep():
-    if request.method == 'POST':
-        customer_id= request.form['message']
-        # print(indate,outdate) 
-        try:
-            conn = get_db_connection1(session['username'],session['password'])
-            # render_template('recepage.html');
-
-            cur = conn.cursor()
-            cur.execute("""
-            insert into message values(current_timestamp,'receptionist',%s);
-            """,[customer_id])
-            # vv = cur.fetchall()
-            # print(vv)
-            conn.commit()
-            cur.close()
-            conn.close()
-            return render_template('message.html',message='message sent successfully')
-        except Exception as e:
-            print(e)
-            return redirect(url_for('receptionist'))
-    return render_template('takemessage.html')
-        
+      

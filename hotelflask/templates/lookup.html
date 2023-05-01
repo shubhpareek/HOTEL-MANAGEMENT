@@ -2,16 +2,20 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<a href="{{url_for('recepage')}}">reception page</a>
+{% if error %}
+    <p style="color:red"><strong>Some error occoured, {{error}}</strong></p>
+{% endif %}
 <form method="post">
     <p>
-        <label for="customer_id">customer_id </label>
+        <label for="customer_id">Customer id:</label>
         <input type="text" name="customer_id"
                placeholder="">
         </input>
     </p>
 
     <p>
-        <label for="when">when </label>
+        <label for="when">Till when:</label>
         <input type="datetime-local" name="when"
                placeholder="">
         </input>
@@ -26,7 +30,7 @@
         </select>
     </p>
     <p>
-        <label for="quantity">quantity</label>
+        <label for="quantity">Quantity:</label>
         <input type="number" name="quantity"
                placeholder="">
         </input>
