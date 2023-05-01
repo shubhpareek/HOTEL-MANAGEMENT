@@ -193,7 +193,14 @@ grant select on room,service,accessory,payments to receptionist;
 
 grant select on rooms_booked to receptionist;
 
+grant select,insert,delete,update on customer to receptionist;
 grant insert,delete,update on payments to receptionist;
+grant insert,delete,update on rooms_booked to receptionist;
+
+create role manager ;
+
+grant select,insert,delete,update on accessory to manager;
+
 
 create role cleaner;
 
@@ -208,6 +215,12 @@ create view not_available_accessory as (select accessory_type from accessory whe
 
 
 ALTER TABLE PAYMENTS ADD CONSTRAINT MyUniqueConstraint AUTO_INCREMENT(payment_id);
+
+create table message(
+	time timestamp,
+	source text,
+	msg text
+)
 
 
 
@@ -446,3 +459,7 @@ update payments set status='paid' where customer_ID=cust_id;
 update customer set lastexit=current_timestamp; 
 end;
 $$;
+
+-- amount , type , size , status , room_no , date of initiation
+select p.amount,r.type,r.size,p.status,r.room_no,p.DATE_OF_INITIATION,p.payment_id from payments as p,rooms_booked as rb,room as r where payments.customer_id = %s and payments.payment_id =
+rooms_booked.payment_id and room_indate >= current_timestamp and r.room_no = rb.room_no and payments.payment_type = 'BOOKING' ;

@@ -346,7 +346,7 @@ def addaccessory():
         try:
             conn = get_db_connection1(session['musername'],session['mpassword'])
             cur = conn.cursor()
-            cur.execute("update accessory set quantity = %s where accessory_id = %s",[quantity,accessory_id])
+            cur.execute("update accessory set quantity_available = %s where accessory_id = %s",[quantity,accessory_id])
             vv = cur.statusmessage
             conn.commit()
             cur.close()

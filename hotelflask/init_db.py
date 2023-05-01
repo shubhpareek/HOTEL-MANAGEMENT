@@ -355,20 +355,20 @@ declare
 
 begin
 		if exists (select * from waiting 
-		where timestamp > current_timestamp and new.accessory_id = waiting.accessory_id and new.quantity > waiting.quantity
+		where beffore > current_timestamp and new.accessory_id = waiting.accessory_id and new.quantity_available > waiting.quantity
 		 order by waiting_id limit 1)
 		 then
 		 	select waiting_id into wt from waiting 
-		where timestamp > current_timestamp and new.accessory_id = waiting.accessory_id and new.quantity > waiting.quantity
+		where beffore > current_timestamp and new.accessory_id = waiting.accessory_id and new.quantity_available > waiting.quantity
 		 order by waiting_id limit 1;
 		 	select customer_id into cus from waiting 
-		where timestamp > current_timestamp and new.accessory_id = waiting.accessory_id and new.quantity > waiting.quantity
+		where beffore > current_timestamp and new.accessory_id = waiting.accessory_id and new.quantity_available > waiting.quantity
 		 order by waiting_id limit 1;
 		 	select waiting.quantity into wq from waiting 
-		where timestamp > current_timestamp and new.accessory_id = waiting.accessory_id and new.quantity > waiting.quantity
+		where beffore > current_timestamp and new.accessory_id = waiting.accessory_id and new.quantity_available > waiting.quantity
 		 order by waiting_id limit 1;
 		 	select waiting.accessory_id into iid from waiting 
-		where timestamp > current_timestamp and new.accessory_id = waiting.accessory_id and new.quantity > waiting.quantity
+		where beffore > current_timestamp and new.accessory_id = waiting.accessory_id and new.quantity_available > waiting.quantity
 		 order by waiting_id limit 1;
 		 	
 			insert into payments(customer_id,amount,status,payment_type,accessory_id,DATE_OF_INITIATION) values(cus,new.ACCESSOR_COST*wq,'due','accessory',iid,current_timestamp); 
