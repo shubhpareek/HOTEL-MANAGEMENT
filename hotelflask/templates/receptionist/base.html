@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block content %}
+<a href="{{url_for('receptionist_login')}}">Receptionist</a>
+<br>
+<div class="dropdown">
+<button onclick="myFunction('r1')" class="dropbtn">Manage Bookings</button>
+    <div id="r1" class="dropdown-content">
+        <a href="{{url_for('book_room')}}">Book A room</a>
+        <a href="{{url_for('cancel_booking')}}">Cancel A Booking</a>
+        <a href="{{url_for('closest')}}">Find Closest Room Available</a>
+    </div>
+</div>
+
+<div class="dropdown">
+<button onclick="myFunction('r2')" class="dropbtn">Manage Customers</button>
+    <div id="r2" class="dropdown-content">
+        <a href="{{url_for('create_customer')}}">Create New Customer</a>
+        <a href="{{url_for('search_customer_by_id')}}">Search Customer By ID</a>
+        <a href="{{url_for('search_customer_by_name')}}">Search Customer By Name</a>
+    </div>
+</div>
+
+<div class="dropdown">
+<button onclick="myFunction('r3')" class="dropbtn">Accessories</button>
+    <div id="r3" class="dropdown-content">
+        <a href="{{url_for('give_accessory')}}">Give Accessory</a>
+    </div>
+</div>
+<div class="dropdown">
+<button onclick="myFunction('r4')" class="dropbtn">Services</button>
+    <div id="r4" class="dropdown-content">
+        <a href="{{url_for('give_service')}}">Give Service</a>
+    </div>
+</div>
+<div class="dropdown">
+<button onclick="myFunction('r5')" class="dropbtn">Bill</button>
+    <div id="r5" class="dropdown-content">
+        <a href="{{url_for('final_bill')}}">Get Final Bill</a>
+    </div>
+</div>
+<div class="dropdown">
+<button onclick="myFunction('r6')" class="dropbtn">Messaging</button>
+    <div id="r6" class="dropdown-content">
+        <a href="{{url_for('receptionist_message')}}">Send Message</a>
+    </div>
+</div>
+<div class="dropdown">
+    <a style=   "color:white; 
+                background:darkslategray;
+                font-size: large;
+                font-weight: bold;" 
+                href="{{url_for("receptionist_home")}}">
+                home
+    </a>
+</div>
+{% block rcontent %}
+{% endblock %}
+{% endblock %}

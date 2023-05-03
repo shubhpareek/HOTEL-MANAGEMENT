@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<center>
+{% if error %}
+    <p style="color:red">
+        <strong>{{error}}</strong>
+    </p>
+{% endif %}
+
+<p><strong>{{role}}</strong></p>
+<form method="post">
+    <p>
+        <label for="username">USERNAME </label>
+        <input type="text" name="username"
+               placeholder="">
+        </input>
+    </p>
+
+    <p>
+        <label for="password">PASSWORD</label>
+        <input type="password" name="password"
+               placeholder="">
+        </input>
+    </p>
+
+    <p>
+        <button type="submit">Submit</button>
+    </p>
+</form>
+</center>
+{% endblock %}

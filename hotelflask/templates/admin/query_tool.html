@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <center>
+        <nav>
+            <a href="{{ url_for('admin_login') }}">ADMIN page</a>
+        </nav>
+        
+    </center>
+    <h1>{% block title %} query results {% endblock %}</h1>
+    <table>
+        <tr>
+            
+    {% for book in desc %}
+            <th>{{book}}</th>
+    {% endfor %}
+        </tr>
+    {% for book in books %}
+            <tr>
+                    {% for sook in book %}
+                            <td>{{sook}}</td>
+                    {% endfor %}
+            </tr>
+    {% endfor %}
+    </table>
+{% endblock %}

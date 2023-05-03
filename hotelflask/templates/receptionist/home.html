@@ -1,0 +1,18 @@
+{% extends 'receptionist/base.html' %}
+{% block rcontent %}
+
+<center>
+    <table>
+            <tr><th>time</th><th>source</th><th>message</th></tr>
+            {% for mess in message %}
+                <tr>
+                    {% for muss in mess %}
+                        <td>
+                            {{muss}}
+                        </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </table>
+</center>
+{% endblock %}

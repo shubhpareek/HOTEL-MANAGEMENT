@@ -1,0 +1,57 @@
+{% extends 'receptionist/base.html' %} 
+{% block rcontent %} 
+<h1>{{heading}}</h1> 
+{% if message %} 
+    <p style="color:green">
+        <strong>{{message}}</strong>
+    </p> 
+{% endif %} 
+
+{% if error %} 
+    <p style="color:red">
+        <strong>{{error}}</strong>
+    </p> 
+{% endif %} 
+
+<form method="post">
+    <p>
+        <label for="{{label}}">{{label_heading}}</label>
+        <input type="{{type}}" name="{{label}}" placeholder=""></input>
+    </p>
+    <p>
+        <button type="submit">Submit</button>
+    </p>
+</form>
+<table>
+    <tr>
+        <th>Update</th>
+        <th>Delete</th>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Phone Number</th>
+        <th>Loyalty</th>
+        <th>Age</th>
+        <th>Total Payed</th>
+        <th>Total Due</th>
+        <th>Last Exit</th>
+    </tr> {% for row in info %} <tr>
+        <td>
+            <form action="/update_customer/{{row[0]}}">
+                <button type="submit">Update</button>
+            </form>
+        </td>
+        <td>
+            <form action="/delete_customer/{{row[0]}}">
+                <button type="submit">Delete</button>
+            </form>
+        </td>
+        <td>{{row[0]}}</td>
+        <td>{{row[1]}}</td>
+        <td>{{row[2]}}</td>
+        <td>{{row[3]}}</td>
+        <td>{{row[4]}}</td>
+        <td>{{row[5]}}</td>
+        <td>{{row[6]}}</td>
+        <td>{{row[7]}}</td>
+    </tr> {% endfor %}
+</table> {% endblock %}

@@ -1,0 +1,25 @@
+{% extends 'receptionist/base.html' %}
+{% block rcontent %}
+{% if error %}
+  <p style="color:red"><strong>Some error occoured, {{error}}</strong></p>
+{% endif %}
+
+<form method="post">
+  <p>
+    <label for="name">Name:</label>
+    <input type="text" id="name" name="name" required><br>
+  </p>
+  <p>
+        <label for="phone">Phone number:</label>
+        <input type="tel" id="phone" name="phone" required><br>
+  </p>
+  <p>
+    <label for="age">Age:</label>
+    <input type="number" id="age" name="age" required><br>
+  </p>
+  <p>
+    <button type="submit"">Submit</button>
+  </p>
+ </form>
+  
+{% endblock %}

@@ -1,0 +1,42 @@
+
+{% extends 'receptionist/base.html' %}
+
+{% block rcontent %}
+{% if error %}
+    <p style="color:red"><strong>Some error occoured, {{error}}</strong></p>
+{% endif %}
+<form method="post">
+    <p>
+        <label for="customer_id">Customer id:</label>
+        <input type="text" name="customer_id"
+               placeholder="">
+        </input>
+    </p>
+
+    <p>
+        <label for="when">Till when:</label>
+        <input type="datetime-local" name="when"
+               placeholder="">
+        </input>
+    </p>
+    <p>
+        <label for="type">Choose a type of accessory:</label>
+        <select id="type" name="type">
+          <option value="1">bed</option>
+          <option value="2">brush</option>
+          <option value="3">soap</option>
+          <option value="4">pillow</option>
+        </select>
+    </p>
+    <p>
+        <label for="quantity">Quantity:</label>
+        <input type="number" name="quantity"
+               placeholder="">
+        </input>
+    </p>
+
+    <p>
+        <button type="submit">Submit</button>
+    </p>
+</form>
+{% endblock %}

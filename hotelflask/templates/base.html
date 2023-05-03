@@ -6,39 +6,59 @@
     <style>
 
 .dropbtn {
-  background-color: #04AA6D;
-  color: white;
-  padding: 16px;
-  font-size: 16px;
-  border: none;
+    background-color: #444444;
+    color: #FFFFFF;
+    margin: 0 1px 0 0;
+    padding: 4px 3px;
+    width: auto;
+    font: bold 10px arial;
+    cursor: pointer;
+    text-align: center;
+    white-space: nowrap;
+    text-decoration: none;
+    border: none;
+    font-size: 25px;
 }
-
+.dropbtn:hover, .dropbtn:focus {
+    background-color: #000066;
+    border: none;
+}
 .dropdown {
-  position: relative;
-  display: inline-block;
+    position: relative;
+    display: inline-block;
+    z-index: 30;
 }
-
 .dropdown-content {
-  display: none;
-  position: absolute;
-  background-color: #f1f1f1;
-  min-width: 160px;
-  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-  z-index: 1;
+    display: none;
+    position: absolute;
+    padding: 0px;
+    width: auto;
+    min-width: 160px;
+    white-space: nowrap;
+    background: #DDDDDD;
+    overflow: auto;
+    z-index: 1;
+    border-style: solid;
+    border-width: 1px;
+    border-color: #000000;
 }
-
 .dropdown-content a {
-  color: black;
-  padding: 12px 16px;
-  text-decoration: none;
-  display: block;
+    color: #000000;
+    padding: 2px 3px;
+    font: 10px arial;
+    display: block;
+    font-size: 20px;
+}
+.dropdown a:hover {
+    background: #000066;
+    color: #FFF;
+    border: none;
+    text-decoration: none;
+}
+.show {
+    display:block;
 }
 
-.dropdown-content a:hover {background-color: #ddd;}
-
-.dropdown:hover .dropdown-content {display: block;}
-
-.dropdown:hover .dropbtn {background-color: #3e8e41;}
 
 * {
   box-sizing: border-box;
@@ -104,8 +124,7 @@ button[type="submit"] {
   text-align: center;
   text-decoration: none;
   display: inline-block;
-  font-size: 16px;
-  border-radius: 4px;
+v
   cursor: pointer;
 }
 
@@ -195,18 +214,30 @@ select:focus {
     </div>
     <br>
     <br>
-    <center>
 
-    <img src="../static/pp.jpeg" alt="">
-    <p ><b>our beloved owner</b></p>
-    <br>
-    <p>baahiya me kasi ke saiyan maarela kacha kochh:</p>
+<script>
+function myFunction(id) {
+    var dropdowns = document.getElementsByClassName("dropdown-content");
+            var i;
+            for (i = 0; i < dropdowns.length; i++) {
+                    var openDropdown = dropdowns[i];
+                            openDropdown.classList.remove('show');
+            }
+    document.getElementById(id).classList.toggle("show");
+}
 
-<blockquote >
-
-    <p><b>RADHESYAM RASIYA</b></p>
-</blockquote>
-
-    </center>
+window.onclick = function(event) {
+        if (!event.target.matches('.dropbtn')) {
+                var dropdowns = document.getElementsByClassName("dropdown-content");
+                var i;
+                for (i = 0; i < dropdowns.length; i++) {
+                        var openDropdown = dropdowns[i];
+                        if (openDropdown.classList.contains('show')) {
+                                openDropdown.classList.remove('show');
+                        }
+                }
+        }
+}
+</script>
 </body>
 </html>

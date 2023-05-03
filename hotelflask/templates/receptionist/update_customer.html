@@ -1,0 +1,24 @@
+{% extends 'receptionist/base.html' %}
+
+{% block rcontent %}
+    <table>
+        <tr>
+            <th>Id</th>
+            <th>Name</th>
+            <th>Phone Number</th>
+            <th>Age</th>
+            <th>Update</th>
+        </tr>
+        {% for row in info %}
+        <tr>
+            <form method="post">
+            <td><input type="text" name="customer_id" readonly value="{{row[0]}}"></td>
+            <td><input type="text" name="name"  value="{{row[1]}}"></td>
+            <td><input type="number" name="phone_no" value={{row[2]}}></td>
+            <td><input type="number" name="age" value={{row[3]}}></td>
+            <td><button type="submit">Update</button>  </td>
+            </form>
+        </tr>
+        {% endfor %}
+    </table>
+{% endblock %}

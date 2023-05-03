@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% if message %}
+    <p style="color:green"><strong>{{message}}</strong> </p>
+{% endif %}
+<p>Add accessory</p>
+<form method="post">
+    <p>
+        <label for="name">Name</label>
+        <input type="text" name="name"
+               placeholder="">
+        </input>
+    </p>
+    <p>
+        <label for="cost">Cost</label>
+        <input type="text" name="cost"
+               placeholder="">
+        </input>
+    </p>
+    <p>
+        <label for="quantity">Quantity </label>
+        <input type="text" name="quantity"
+               placeholder="">
+        </input>
+    </p>
+
+    <p>
+        <button type="submit">Submit</button>
+    </p>
+</form>
+{% endblock %}

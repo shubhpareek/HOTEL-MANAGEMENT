@@ -1,0 +1,17 @@
+
+{% extends 'receptionist/base.html' %}
+
+{% block rcontent %}
+{% if message %}
+<p style="color:green">
+    <strong>{{message}}</strong>
+</p>
+{% endif %}
+
+{% if error %}
+<p style="color:red">
+    <strong>ERROR: {{error}}</strong>
+</p>
+{% endif %}
+
+{% endblock %}

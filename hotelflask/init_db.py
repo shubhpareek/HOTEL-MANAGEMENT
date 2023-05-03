@@ -96,7 +96,7 @@ SERVICE_RATE INT NOT NULL check(service_rate > 0)
 
 cur.execute("""CREATE TABLE ACCESSORY
 (
-ACCESSORY_ID  INT PRIMARY KEY, 
+ACCESSORY_ID  SERIAL PRIMARY KEY, 
 ACCESSORY_TYPE TEXT NOT NULL,
 ACCESSOR_COST INT NOT NULL check(ACCESSOR_COST > 0), 
 QUANTITY_AVAILABLE INT NOT NULL check(QUANTITY_AVAILABLE >= 0)
@@ -432,9 +432,9 @@ vals = [[1,20,'premium',4],[2,10,'basic',3],[3,5,'ac',5],[4,5,'non-ac',2]]
 for val in vals:
     cur.execute('insert into room values(%s,%s,%s,%s)',val)
 
-vals = [[1,'bed',5,4],[2,'brush',5,3],[3,'soap',5,5],[4,'pillow',5,2],[5,'freshair',5,5]]
+vals = [['bed',5,4],['brush',5,3],['soap',5,5],['pillow',5,2],['freshair',5,5]]
 for val in vals:
-    cur.execute('insert into accessory values(%s,%s,%s,%s)',val)
+    cur.execute('insert into accessory(accessory_type,accessor_cost,quantity_available) values(%s,%s,%s)',val)
 vals = [[1,'massage',5],[2,'roomclean',5],[3,'laundry',5],[4,'satishservice',5],[5,'massage',5],[6,'satishservice',5]]
 for val in vals:
     cur.execute('insert into service values(%s,%s,%s)',val)
@@ -469,9 +469,10 @@ grant select,insert,delete,update on service_taken,customer,message,payments,roo
 grant usage, select on all sequences in schema public to receptionist;	
 
 create role manager login password 'password';
-grant select,insert,delete,update on accessory,message to manager;
+grant select,insert,delete,update on accessory,message,payments to manager;
 create view not_available_accessory as (select * from accessory where quantity_available = 0);
-grant select on not_available_accessory to manager;
+grant select on not_available_accessory,waiting to manager;
+grant usage, select on all sequences in schema public to manager;
 """)
 
 conn.commit()
