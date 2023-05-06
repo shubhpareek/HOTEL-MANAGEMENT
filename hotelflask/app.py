@@ -176,7 +176,16 @@ def give_accessory():
             print(e)
             return render_template('receptionist/give_accessory.html')
     else:
-        return render_template('receptionist/give_accessory.html')
+        try:
+            conn = get_db_connection1(session['rusername'],session['rpassword'])
+            cur = conn.cursor()
+            cur.execute("select * from accessory")
+            accessories = cur.fetchall()
+            cur.close()
+            conn.close()
+        except:
+            return redirect(url_for('receptionist_login'))
+        return render_template('receptionist/give_accessory.html',accessories=accessories)
 
 @app.route('/give-service/',methods=('GET', 'POST'))
 def give_service():
@@ -206,7 +215,17 @@ def give_service():
         except Exception as e:
             print(e)
             return redirect(url_for('receptionist_login'))
-    return render_template('receptionist/give_service.html')
+    else:
+        try:
+            conn = get_db_connection1(session['rusername'],session['rpassword'])
+            cur = conn.cursor()
+            cur.execute("select * from service")
+            services = cur.fetchall()
+            cur.close()
+            conn.close()
+        except:
+            return redirect(url_for('receptionist_login'))
+        return render_template('receptionist/give_service.html',services=services)
 
 @app.route('/final-bill/',methods = ['GET','POST'])
 def final_bill():
@@ -327,13 +346,13 @@ def update_customer(customer_id):
     if request.method == 'POST':
         customer_id = request.form['customer_id']
         name = request.form['name']
-        phone_no = request.form['phoneno']
+        phone_no = request.form['phone_no']
         age = request.form['age']
         try:
             conn = get_db_connection1(session['rusername'],session['rpassword'])
             cur = conn.cursor()
             try:
-                cur.execute("update set name=%s,phoneno=%s,age=%s where customer_id=%s",
+                cur.execute("update customer set name=%s,phone_no=%s,age=%s where customer_id=%s",
                             [name,phone_no,age,customer_id])
                 conn.commit()
                 cur.close()

@@ -27,10 +27,9 @@
     <p>
         <label for="type">Choose a type of service:</label>
         <select id="type" name="type">
-          <option value="massage">massage</option>
-          <option value="roomclean">roomclean</option>
-          <option value="laundry">laundry</option>
-          <option value="satishservice">satishservice</option>
+            {% for ser in services %}
+            <option value="{{ser[1]}}">{{ser[1]}}, price: {{ser[2]}}</option>
+            {% endfor %}
         </select>
     </p>
 

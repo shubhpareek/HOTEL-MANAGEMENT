@@ -22,10 +22,9 @@
     <p>
         <label for="type">Choose a type of accessory:</label>
         <select id="type" name="type">
-          <option value="1">bed</option>
-          <option value="2">brush</option>
-          <option value="3">soap</option>
-          <option value="4">pillow</option>
+        {% for acc in accessories %}
+            <option value="{{acc[0]}}">{{acc[1]}}, price: {{acc[2]}}, remaining: {{acc[3]}}</option>
+        {% endfor %}
         </select>
     </p>
     <p>

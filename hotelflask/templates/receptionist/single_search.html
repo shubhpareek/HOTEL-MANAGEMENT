@@ -36,12 +36,12 @@
         <th>Last Exit</th>
     </tr> {% for row in info %} <tr>
         <td>
-            <form action="/update_customer/{{row[0]}}">
+            <form action="/update-customer/{{row[0]}}">
                 <button type="submit">Update</button>
             </form>
         </td>
         <td>
-            <form action="/delete_customer/{{row[0]}}">
+            <form action="/delete-customer/{{row[0]}}">
                 <button type="submit">Delete</button>
             </form>
         </td>

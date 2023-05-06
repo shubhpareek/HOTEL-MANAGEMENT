@@ -458,6 +458,12 @@ $$;""")
             
 cur.execute("""
 create index roomsearchhelper on rooms_booked using btree(room_indate,room_outdate) INCLUDE(room_no);
+create extension pg_trgm;
+create index idx_cust_name on customer using gin(name gin_trgm_ops);
+create index idx_init_date_pay on payments using btree(date_of_initiation);
+create index idx_service_date on service_taken using btree(starttime,endtime) include (service_id);
+create index idx_waiting on waiting using btree(beffore);
+
 """)
 cur.execute("""
 insert into message values(current_timestamp,'owner','hello , this is the first messge');
