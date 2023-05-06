@@ -212,10 +212,10 @@ lock payments in access exclusive mode;
 lock rooms_booked in access exclusive mode;
 if exists
 (SELECT room_no 
-	from room where room_type = type and  ROOM_SIZE = SIZ and not exists ( select room_no from rooms_booked where (((room_indate between in_date and out_date))or(room_outdate between in_date and out_date )) and rooms_booked.room_no = room.room_no and room.room_type = type) )
+	from room where room_type = type and  ROOM_SIZE = SIZ and not exists ( select room_no from rooms_booked where ((room_indate between in_date and out_date)or(room_outdate between in_date and out_date )or(in_date between room_indate and room_outdate)or(out_date between room_indate and room_outdate )) and rooms_booked.room_no = room.room_no and room.room_type = type) )
 	
 then
-	select room_cost ,room_no into cost,rno  from room where room_type = type and ROOM_SIZE = SIZ and not exists ( select room_no from rooms_booked where (((room_indate between in_date and out_date))or(room_outdate between in_date and out_date )) and rooms_booked.room_no = room.room_no and room.room_type = type) limit 1 ;
+	select room_cost ,room_no into cost,rno  from room where room_type = type and ROOM_SIZE = SIZ and not exists ( select room_no from rooms_booked where ((in_date between room_indate and room_outdate)or(out_date between room_indate and room_outdate )or(room_indate between in_date and out_date)or(room_outdate between in_date and out_date )) and rooms_booked.room_no = room.room_no and room.room_type = type) limit 1 ;
 	
 	
 	insert into payments (customer_id,amount,status,payment_type,room_no,DATE_OF_INITIATION,DATE_OF_completion) values(cust_id,ceil(cost*(extract (epoch from out_date - in_date))/3600),'PAID','BOOKING',rno,now(),now()) returning payment_id into varu;
@@ -329,7 +329,7 @@ begin
 		then
 		select accessory.accessor_cost into cus from accessory where accessory_id = id and quantity <= QUANTITY_AVAILABLE;
 		cus = cus*quantity;
-		insert into payments(customer_id,amount,status,payment_type,accessory_id,DATE_OF_INITIATION) values(customerid,cus,'paid','accessory',id,current_timestamp);
+		insert into payments(customer_id,amount,status,payment_type,accessory_id,DATE_OF_INITIATION) values(customerid,cus,'due','accessory',id,current_timestamp);
 		return 'accessory availaible inserted into payments';
 		else
 		insert into waiting(
@@ -400,13 +400,15 @@ begin
 if exists
 (SELECT service_id from service where
  service_type = whservice and 
-	not exists ( select service_id from service_taken where (((starttime between in_date and out_date))or(endtime between in_date and out_date )) and service.service_id= service_taken.service_id ))
+	not exists ( select service_id from service_taken where (((in_date between starttime and endtime))or(out_date between starttime and endtime )or
+    (starttime between in_date and out_date)or(endtime between in_date and out_date )) and service.service_id= service_taken.service_id ))
 	
 then
 	SELECT service_id,service_rate into varu, rno 
     from service where 
     service_type = whservice and 
-	not exists ( select service_id from service_taken where (((starttime between in_date and out_date))or(endtime between in_date and out_date )) and service.service_id= service_taken.service_id ) limit 1;
+	not exists ( select service_id from service_taken where ((
+        (in_date between starttime and endtime)or(out_date between starttime and endtime )or(starttime between in_date and out_date)or(endtime between in_date and out_date )) and service.service_id= service_taken.service_id )) limit 1;
 	
 	
 	insert into payments (customer_id,amount,status,payment_type,service_id,DATE_OF_INITIATION,DATE_OF_completion) values(cust_id,cast(ceil(rno*(extract (epoch from out_date - in_date))/3600) as numeric),'PAID','SERVICE',varu,now(),now()) returning payment_id into pid;

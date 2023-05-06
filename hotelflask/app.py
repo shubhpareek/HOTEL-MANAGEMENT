@@ -243,13 +243,17 @@ def final_bill():
                 cur.execute("""select sum(amount) from payments,customer
                 where payments.customer_id = %s and DATE_OF_INITIATION > lastexit and customer.customer_id = payments.customer_id;""",[customer_id])
                 total = cur.fetchall()
+                cur.execute("""select sum(amount) from payments,customer
+                where payments.customer_id = %s and status = 'due' and DATE_OF_INITIATION > lastexit and customer.customer_id = payments.customer_id;""",[customer_id])
+                due = cur.fetchall()
+
                 cur.execute("""select loyalty from payments,customer
                 where payments.customer_id = %s and DATE_OF_INITIATION > lastexit and customer.customer_id = payments.customer_id;""",[customer_id])
                 loyalty=cur.fetchall()
                 conn.commit()
                 cur.close()
                 conn.close()
-                return render_template('receptionist/final_bill.html',books=vv,customer_id=customer_id,total=total[0][0],discount=str(loyalty[0][0]*5)+'%',discounted=float(total[0][0])*(float(loyalty[0][0]*0.05)))
+                return render_template('receptionist/final_bill.html',due=due[0][0],books=vv,customer_id=customer_id,total=total[0][0],discount=str(loyalty[0][0]*5)+'%',discounted=float(total[0][0])*(float(loyalty[0][0]*0.05)))
             except Exception as e:
                 print(e)
                 cur.close()
@@ -413,7 +417,7 @@ def cancel_booking():
     if request.method == 'POST':
         customer_id = request.form['customer_id']
         try:
-            conn = get_db_connection1(session['username'],session['password'])
+            conn = get_db_connection1(session['rusername'],session['rpassword'])
             cur = conn.cursor()
             try:
                 cur.execute("""
@@ -438,7 +442,7 @@ def cancel_booking():
 @app.route('/cancel/<payment_id>',methods = ['GET','POST'])
 def cancel(payment_id):
     try:
-        conn = get_db_connection1(session['username'],session['password'])
+        conn = get_db_connection1(session['rusername'],session['rpassword'])
         cur = conn.cursor()
         try:
             cur.execute("""
@@ -449,14 +453,14 @@ def cancel(payment_id):
             cur.close()
             conn.close()
         except Exception as e:
-            print(e)
+            print(e,'yoyo')
             cur.close()
             conn.close()
             return render_template('receptionist/message.html',error=e)
     except Exception as e:
-        print(e)
+        print(e,'oyo')
         return redirect('receptionist_login')
-    return render_template('message.html',message ='Booking of payment id '+str(payment_id)+'was deleted' )
+    return render_template('receptionist/message.html',message ='Booking of payment id '+str(payment_id)+'was deleted' )
 
 @app.route('/receptionist-message/',methods=['GET','POST'])
 def receptionist_message():
